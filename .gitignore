@@ -1,0 +1,38 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Secret Keys, Credentials & Environment Variables (NEVER COMMIT)
+.env
+.env.*
+*.skey
+*.vkey
+*.pem
+*.key
+*secret*
+*credentials*
+
+# Large Media, Raw Video Streams & Pretrained Weights
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.pt
+*.onnx
+*.bak
+*.BAK
+*.mdf
+*.ldf
+
+# OS & Temp Files
+.DS_Store
+Thumbs.db
+~$*
+*.tmp
+*.log
+node_modules/
+

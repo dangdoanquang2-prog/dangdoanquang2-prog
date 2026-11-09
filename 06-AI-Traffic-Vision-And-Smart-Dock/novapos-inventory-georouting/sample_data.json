@@ -1,0 +1,93 @@
+{
+  "products": [
+    {
+      "productId": "SP001",
+      "name": "Điện thoại H-Phone 15",
+      "category": "Điện tử",
+      "price": 25000000,
+      "description": "Điện thoại thông minh đời mới nhất"
+    },
+    {
+      "productId": "SP002",
+      "name": "Tai nghe Bluetooth Pro",
+      "category": "Phụ kiện",
+      "price": 3500000,
+      "description": "Tai nghe chống ồn chủ động"
+    }
+  ],
+  "suppliers_inventory": [
+    {
+      "supplierId": "NCC001",
+      "name": "Kho Tổng miền Bắc",
+      "address": {
+        "city": "Hà Nội",
+        "detailedAddress": "123 Đường Cầu Giấy, Hà Nội",
+        "coordinates": {
+          "lat": 21.038166,
+          "lng": 105.795493
+        }
+      },
+      "inventory": [
+        {
+          "productId": "SP001",
+          "stockQuantity": 150
+        },
+        {
+          "productId": "SP002",
+          "stockQuantity": 300
+        }
+      ]
+    },
+    {
+      "supplierId": "NCC002",
+      "name": "Kho Tổng miền Nam",
+      "address": {
+        "city": "Hồ Chí Minh",
+        "detailedAddress": "456 Xa Lộ Hà Nội, TP. HCM",
+        "coordinates": {
+          "lat": 10.823099,
+          "lng": 106.629662
+        }
+      },
+      "inventory": [
+        {
+          "productId": "SP001",
+          "stockQuantity": 80
+        }
+      ]
+    }
+  ],
+  "customers": [
+    {
+      "customerId": "KH001",
+      "name": "Nguyễn Văn A",
+      "phone": "0987654321",
+      "shippingAddress": {
+        "city": "Hà Nội",
+        "detailedAddress": "789 Phố Cổ, Hoàn Kiếm, Hà Nội",
+        "coordinates": {
+          "lat": 21.028511,
+          "lng": 105.804817
+        }
+      }
+    }
+  ],
+  "orders": [
+    {
+      "orderId": "DH001",
+      "customerId": "KH001",
+      "supplierId": "NCC001",
+      "status": "pending",
+      "items": [
+        {
+          "productId": "SP001",
+          "quantity": 1,
+          "price": 25000000
+        }
+      ],
+      "totalAmount": 25000000,
+      "orderDate": "2026-04-07T09:00:00Z",
+      "shippingDistanceKm": 4.5
+    }
+  ]
+}

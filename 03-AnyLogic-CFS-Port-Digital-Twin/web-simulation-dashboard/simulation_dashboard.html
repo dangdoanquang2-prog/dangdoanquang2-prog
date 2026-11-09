@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Mô Phỏng Dòng Chảy Hệ Thống Kho Hàng Gemadept Logistics</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030712;
+            --card-bg: rgba(17, 24, 39, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.25);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.25);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.25);
+            --danger: #f43f5e;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        .container { max-width: 1500px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .logo-title h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .logo-title p { color: var(--text-muted); font-size: 13px; margin-top: 3px; }
+        .badge {
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid var(--primary);
+            color: #60a5fa;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 330px 1fr 370px;
+            gap: 20px;
+        }
+        @media (max-width: 1200px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #ffffff;
+            border-left: 4px solid var(--primary);
+            padding-left: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .control-group { margin-bottom: 16px; }
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .control-value { color: var(--text-main); font-weight: 600; }
+        select, input[type="range"] {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"] { -webkit-appearance: none; height: 6px; background: rgba(255, 255, 255, 0.1); }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+            cursor: pointer;
+        }
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        .toggle-container:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.07);
+        }
+        .toggle-info h4 { font-size: 12px; font-weight: 600; color: #f3f4f6; }
+        .toggle-info p { font-size: 10px; color: var(--text-muted); }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .2s;
+            border-radius: 22px;
+            border: 1px solid var(--border-color);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(18px); }
+        
+        .center-panel { display: flex; flex-direction: column; gap: 20px; }
+        .canvas-container {
+            position: relative;
+            background: #090d16;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+            aspect-ratio: 16 / 7;
+        }
+        .canvas-overlay-title {
+            position: absolute;
+            top: 12px;
+            left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            display: inline-block;
+        }
+        #simCanvas { width: 100%; height: 100%; display: block; }
+        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .kpi-card {
+            background: rgba(17, 24, 39, 0.45);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 3px;
+        }
+        .kpi-card.blue::before { background-color: var(--primary); }
+        .kpi-card.purple::before { background-color: #a855f7; }
+        .kpi-card.emerald::before { background-color: var(--success); }
+        .kpi-card.amber::before { background-color: var(--warning); }
+        .kpi-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+        .kpi-value { font-size: 19px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: #ffffff; }
+        .kpi-subtext { font-size: 10px; color: var(--text-muted); }
+        .visuals-row { display: grid; grid-template-columns: 200px 1fr; gap: 15px; }
+        .visual-box {
+            background: rgba(10, 15, 30, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            height: 150px;
+            position: relative;
+            padding: 10px;
+        }
+        .bar-container { display: flex; justify-content: space-around; width: 100%; height: 100%; align-items: flex-end; }
+        .bar-column { display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; width: 55px; }
+        .bar-fill { width: 28px; border-radius: 4px 4px 0 0; position: relative; transition: height 0.5s ease; min-height: 4px; }
+        .bar-value { position: absolute; top: -20px; width: 100%; text-align: center; font-size: 9px; font-weight: 700; color: #ffffff; }
+        .bar-label { font-size: 9px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+        .bar-grid-line { position: absolute; left: 0; width: 100%; border-bottom: 1px dashed rgba(255,255,255,0.04); }
+        .bar-grid-line span { font-size: 8px; color: rgba(255,255,255,0.2); transform: translateY(-7px); display: inline-block; padding-left: 5px; }
+        .progress-list { display: flex; flex-direction: column; gap: 6px; justify-content: center; height: 100%; }
+        .progress-header { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 2px; }
+        .progress-bar-bg { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; width: 0%; border-radius: 3px; transition: width 0.5s ease; }
+        .formula-card { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+        .formula-title { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #ffffff; margin-bottom: 8px; font-family: 'Space Grotesk', sans-serif; }
+        .formula-expr { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; text-align: center; background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 6px; color: #60a5fa; margin-bottom: 8px; }
+        .formula-calc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+        .formula-calc strong { color: #ffffff; }
+        .status-badge { font-size: 8px; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+        .status-badge.green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .status-badge.yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .status-badge.red { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+        .flow-concept { display: block; border-left: 2px solid var(--primary); padding-left: 8px; margin-top: 8px; font-style: italic; }
+        .bottom-docs { margin-top: 20px; background: rgba(17, 24, 39, 0.45); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; }
+        .bottom-docs h3 { font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 8px; font-family: 'Space Grotesk', sans-serif; }
+        .bottom-docs p { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 8px; }
+        .bottom-docs ul { list-style-type: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+        .bottom-docs li { font-size: 11px; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; display: flex; gap: 6px; }
+        .bullet-icon { color: var(--success); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-title">
+                <h1>Trình Mô Phỏng Dòng Chảy Hệ Thống Kho Gemadept Logistics</h1>
+                <p>Mô phỏng Định luật Little, lý thuyết Điểm nghẽn (TOC) & Phân tích kịch bản từng kho hàng (Chương 6)</p>
+            </div>
+            <div class="badge">
+                <span class="status-dot"></span>
+                <span>Định luật Little: Đã kiểm chứng</span>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-title">Bộ Điều Khiển</div>
+                
+                <div class="control-group">
+                    <label class="control-label" for="selectWarehouse">
+                        <span>Chọn Trung Tâm Phân Phối</span>
+                        <span class="control-value">Kho</span>
+                    </label>
+                    <select id="selectWarehouse" onchange="changeWarehouse()">
+                        <option value="songthan" selected>Mega DC Sóng Thần</option>
+                        <option value="phuocson">DC Phước Sơn</option>
+                        <option value="namlien">DC Nam Liên</option>
+                        <option value="total">Toàn Hệ Thống (3 DC)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="selectScenario">
+                        <span>Kịch Bản Vận Hành</span>
+                        <span class="control-value">Chế độ</span>
+                    </label>
+                    <select id="selectScenario" onchange="changeScenario()">
+                        <option value="normal" selected>Ngày Thường (Normal Day)</option>
+                        <option value="mega">Ngày Mega Sale Day</option>
+                        <option value="custom">Tùy Chỉnh (Custom Parameter)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Thông lượng đơn (λ)</span>
+                        <span class="control-value"><span id="valThroughput">4.265</span> CBM/ngày</span>
+                    </div>
+                    <input type="range" id="sliderThroughput" min="500" max="10000" step="1" value="4265" oninput="onSliderChange()">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Công suất kho tối đa (μ)</span>
+                        <span class="control-value"><span id="valCapacity">5.000</span> CBM/ngày</span>
+                    </div>
+                    <input type="range" id="sliderCapacity" min="1000" max="12000" step="1" value="5000" oninput="onSliderChange()">
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); margin: 12px 0;"></div>
+                <div class="card-title" style="font-size: 14px; margin-bottom: 10px;">Giải Pháp Cải Tiến (Chương 6)</div>
+                
+                <div class="toggle-container">
+                    <div class="toggle-info">
+                        <h4>Quét barcode & Nhận dạng nhanh</h4>
+                        <p>Giảm trễ Receiving từ 2.0h xuống 1.5h</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkReceiving" onchange="updateValues()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <div class="toggle-info">
+                        <h4>WMS gợi ý vị trí cất hàng tối ưu</h4>
+                        <p>Giảm trễ Putaway từ 3.0h xuống 2.0h</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkPutaway" onchange="updateValues()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <div class="toggle-info">
+                        <h4>Dynamic Slotting & Batch Picking</h4>
+                        <p>Giảm trễ Picking từ 4.0h xuống 2.0h</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkPicking" onchange="updateValues()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <div class="toggle-info">
+                        <h4>Máy dán thùng tự động (Sealer)</h4>
+                        <p>Giảm Packing từ 2.0h xuống 1.0h & tăng +30% công suất</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkPacking" onchange="updateValues()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <div class="toggle-info">
+                        <h4>Đồng bộ API điều phối xe 3PL</h4>
+                        <p>Giảm trễ Outbound từ 1.0h xuống 0.5h</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkAPI" onchange="updateValues()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="center-panel">
+                <div class="canvas-container">
+                    <div class="canvas-overlay-title">
+                        <span class="status-dot" id="statusDot"></span>
+                        <span>MÔ PHỎNG DÒNG CHẢY LOGISTICS TRONG KHO HÀNG GEMADEPT</span>
+                    </div>
+                    <canvas id="simCanvas"></canvas>
+                </div>
+
+                <div class="kpi-row">
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Thông Lượng Thực (D)</div>
+                        <div class="kpi-value" id="kpiThroughput">4.265</div>
+                        <div class="kpi-subtext">CBM/ngày xuất kho</div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-label">Thời Gian Chu Kỳ (T)</div>
+                        <div class="kpi-value" id="kpiCycleTime">12.0</div>
+                        <div class="kpi-subtext">giờ trung bình/chu kỳ</div>
+                    </div>
+                    <div class="kpi-card emerald">
+                        <div class="kpi-label">Lượng WIP Thực (I)</div>
+                        <div class="kpi-value" id="kpiWIP">2.133</div>
+                        <div class="kpi-subtext">CBM bán thành phẩm lưu kho</div>
+                    </div>
+                    <div class="kpi-card amber">
+                        <div class="kpi-label">Hệ Số Sử Dụng (ρ)</div>
+                        <div class="kpi-value" id="kpiUtilization">85.3%</div>
+                        <div class="kpi-subtext" id="kpiUtilStatus">Vận hành ổn định</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="visuals-row">
+                        <div>
+                            <div style="font-size: 12px; font-weight: 600; text-align: center; margin-bottom: 10px; color: var(--text-muted);">
+                                So Sánh Tồn Kho WIP (CBM)
+                            </div>
+                            <div class="visual-box">
+                                <div class="bar-grid-line" style="bottom: 110px;"><span>75%</span></div>
+                                <div class="bar-grid-line" style="bottom: 75px;"><span>50%</span></div>
+                                <div class="bar-grid-line" style="bottom: 40px;"><span>25%</span></div>
+                                <div class="bar-container">
+                                    <div class="bar-column">
+                                        <div id="barCurrent" class="bar-fill" style="height: 0%; background: linear-gradient(180deg, #3b82f6, #1d4ed8);">
+                                            <div id="barCurrentVal" class="bar-value">0</div>
+                                        </div>
+                                        <div class="bar-label">Trước Cải Tiến</div>
+                                    </div>
+                                    <div class="bar-column">
+                                        <div id="barTarget" class="bar-fill" style="height: 0%; background: linear-gradient(180deg, #10b981, #047857);">
+                                            <div id="barTargetVal" class="bar-value">0</div>
+                                        </div>
+                                        <div class="bar-label">Hiện Tại / Sau</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 600; text-align: center; margin-bottom: 10px; color: var(--text-muted);">
+                                Cơ Cấu Thời Gian Chu Kỳ Phân Rã (Giờ)
+                            </div>
+                            <div class="progress-list">
+                                <div class="progress-item">
+                                    <div class="progress-header" style="color: #60a5fa;">
+                                        <span>Receiving (Nhận hàng)</span>
+                                        <span id="txtCT_rec">2.0 giờ</span>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="barCT_rec" class="progress-bar-fill" style="background-color: #3b82f6;"></div></div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-header" style="color: #c084fc;">
+                                        <span>Putaway (Cất xếp kệ)</span>
+                                        <span id="txtCT_put">3.0 giờ</span>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="barCT_put" class="progress-bar-fill" style="background-color: #a855f7;"></div></div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-header" style="color: #f472b6;">
+                                        <span>Picking (Lấy gom hàng)</span>
+                                        <span id="txtCT_pick">4.0 giờ</span>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="barCT_pick" class="progress-bar-fill" style="background-color: #ec4899;"></div></div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-header" style="color: #fbbf24;">
+                                        <span>Packing (Đóng gói thùng)</span>
+                                        <span id="txtCT_pack">2.0 giờ</span>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="barCT_pack" class="progress-bar-fill" style="background-color: #eab308;"></div></div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-header" style="color: #34d399;">
+                                        <span>Outbound (Giao xe 3PL)</span>
+                                        <span id="txtCT_out">1.0 giờ</span>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="barCT_out" class="progress-bar-fill" style="background-color: #10b981;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card math-panel">
+                <div class="card-title">Mô Hình Toán Học</div>
+                <div class="formula-card">
+                    <div class="formula-title">
+                        <span>Định Luật Little (Little's Law)</span>
+                        <span class="status-badge green">Khớp 100%</span>
+                    </div>
+                    <div class="formula-expr">I = D &times; T</div>
+                    <div class="formula-calc">
+                        Thời gian chu kỳ (T):<br>
+                        T = <span id="mathCTMins">12.0</span> giờ / 24 = <strong><span id="mathCTHours">0.5000</span> ngày</strong><br>
+                        Thông lượng thực tế xuất kho (D):<br>
+                        D = <strong><span id="mathThroughputPerHour">4.265</span> CBM/ngày</strong><br>
+                        Lượng WIP tích lũy lý thuyết:<br>
+                        I_theory = D &times; T_ngày = <span id="mathThroughputCalc">4.265</span> &times; <span id="mathCTHours2">0.5000</span> = <strong><span id="mathWIPTheory">2.133</span> CBM</strong><br>
+                        Mức WIP thực đo lường: <strong><span id="mathWIPReal">2.133</span> CBM</strong>.
+                    </div>
+                </div>
+
+                <div class="formula-card">
+                    <div class="formula-title">
+                        <span>Thuyết Điểm Nghẽn & Hiệu Suất</span>
+                        <span class="status-badge yellow" id="badgeTOC">Cân Bằng</span>
+                    </div>
+                    <div class="formula-expr">&rho; = &lambda; / &mu;</div>
+                    <div class="formula-calc">
+                        Thông lượng yêu cầu (&lambda;): <strong><span id="mathLambda">4.265</span> CBM/ngày</strong><br>
+                        Năng lực thiết kế tối đa (&mu;): <strong><span id="mathMu">5.000</span> CBM/ngày</strong><br>
+                        Hệ số sử dụng (ρ = λ / μ): <strong><span id="mathRho">85.3%</span></strong><br>
+                        Trạng thái tắc nghẽn dòng chảy:<br>
+                        <span id="mathTOCFormula">Hệ thống cân bằng.</span><br>
+                        <span class="flow-concept" id="mathTOCExplain">Buffer duy trì ổn định.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-docs">
+            <h3>&rarr; Thuyết Minh Mô Phỏng Cải Tiến Quy Trình Kho Hàng (Phần 6)</h3>
+            <p>Trình mô phỏng hiển thị dòng chảy sản phẩm tích hợp các giải pháp tinh gọn của Gemadept Logistics mang lại hiệu quả định lượng rõ rệt:</p>
+            <ul>
+                <li>
+                    <span class="bullet-icon">&bull;</span>
+                    <div><strong>Nhận hàng barcode (6.1):</strong> Quét mã vạch nhanh giảm thời gian chu kỳ Receiving từ 2.0h xuống còn <strong>1.5 giờ</strong>.</div>
+                </li>
+                <li>
+                    <span class="bullet-icon">&bull;</span>
+                    <div><strong>WMS gợi ý vị trí cất kệ (6.1):</strong> Định vị tự động loại bỏ tìm kiếm vị trí trống, giảm Putaway từ 3.0h xuống còn <strong>2.0 giờ</strong>.</div>
+                </li>
+                <li>
+                    <span class="bullet-icon">&bull;</span>
+                    <div><strong>Dynamic Slotting & Batch Picking (6.1.1):</strong> Định tuyến gom đơn tối ưu hóa quãng đường di chuyển của nhân công nhặt hàng, giảm Picking từ 4.0h xuống còn <strong>2.0 giờ</strong>.</div>
+                </li>
+                <li>
+                    <span class="bullet-icon">&bull;</span>
+                    <div><strong>Máy dán thùng tự động (6.1.3):</strong> Cơ giới hóa dán băng dính bàn đóng gói giảm thời gian đóng gói từ 2.0h xuống còn <strong>1.0 giờ</strong>, đồng thời nâng công suất trạm đóng gói thêm <strong>30%</strong>.</div>
+                </li>
+                <li>
+                    <span class="bullet-icon">&bull;</span>
+                    <div><strong>Đồng bộ API xe chặng cuối (6.1.4):</strong> Điều tiết xe 3PL thời gian thực, triệt tiêu thời gian trễ xuất kho hao phí, giảm Outbound từ 1.0h xuống còn <strong>0.5 giờ</strong>.</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const warehouses = {
+            songthan: { name: "Mega DC Sóng Thần", lambda: 4265, mu: 5000, color: "#3b82f6" },
+            phuocson: { name: "DC Phước Sơn", lambda: 2132, mu: 2500, color: "#a855f7" },
+            namlien: { name: "DC Nam Liên", lambda: 1219, mu: 1500, color: "#10b981" },
+            total: { name: "Toàn Hệ Thống (3 DC)", lambda: 7616, mu: 9000, color: "#60a5fa" }
+        };
+
+        const baseTimes = {
+            receiving: 2.0,
+            putaway: 3.0,
+            picking: 4.0,
+            packing: 2.0,
+            outbound: 1.0
+        };
+
+        let currentWarehouse = "songthan";
+        let currentScenario = "normal";
+
+        const canvas = document.getElementById("simCanvas");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+        let animationFrameId;
+
+        const stages = [
+            { name: "Receiving (Nhận)", color: "#3b82f6" },
+            { name: "Putaway (Cất kệ)", color: "#a855f7" },
+            { name: "Picking (Nhặt)", color: "#ec4899" },
+            { name: "Packing (Đóng)", color: "#eab308" },
+            { name: "Outbound (Xuất)", color: "#10b981" }
+        ];
+
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            changeWarehouse();
+            animate();
+        });
+        window.addEventListener('resize', resizeCanvas);
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        function changeWarehouse() {
+            currentWarehouse = document.getElementById("selectWarehouse").value;
+            const wInfo = warehouses[currentWarehouse];
+            
+            const sliderT = document.getElementById("sliderThroughput");
+            const sliderC = document.getElementById("sliderCapacity");
+
+            // Adjust slider ranges to fit current warehouse scale
+            sliderT.min = Math.round(wInfo.lambda * 0.2);
+            sliderT.max = Math.round(wInfo.lambda * 2.5);
+            sliderC.min = Math.round(wInfo.mu * 0.2);
+            sliderC.max = Math.round(wInfo.mu * 2.5);
+
+            changeScenario();
+        }
+
+        function changeScenario() {
+            const val = document.getElementById("selectScenario").value;
+            currentScenario = val;
+            const wInfo = warehouses[currentWarehouse];
+            const sliderT = document.getElementById("sliderThroughput");
+            const sliderC = document.getElementById("sliderCapacity");
+
+            if (val === "normal") {
+                sliderT.value = wInfo.lambda;
+                sliderC.value = wInfo.mu;
+                sliderT.disabled = true;
+                sliderC.disabled = true;
+            } else if (val === "mega") {
+                // Mega day throughput is typically 30% higher
+                sliderT.value = Math.round(wInfo.lambda * 1.3);
+                sliderC.value = wInfo.mu; // capacity starts the same unless packing automation is checked
+                sliderT.disabled = true;
+                sliderC.disabled = true;
+            } else {
+                sliderT.disabled = false;
+                sliderC.disabled = false;
+            }
+            
+            document.getElementById("valThroughput").innerText = parseFloat(sliderT.value).toLocaleString('vi-VN');
+            document.getElementById("valCapacity").innerText = parseFloat(sliderC.value).toLocaleString('vi-VN');
+            updateValues();
+        }
+
+        function onSliderChange() {
+            document.getElementById("valThroughput").innerText = parseFloat(document.getElementById("sliderThroughput").value).toLocaleString('vi-VN');
+            document.getElementById("valCapacity").innerText = parseFloat(document.getElementById("sliderCapacity").value).toLocaleString('vi-VN');
+            updateValues();
+        }
+
+        function updateValues() {
+            const lambda = parseInt(document.getElementById("sliderThroughput").value);
+            const mu_base = parseInt(document.getElementById("sliderCapacity").value);
+            
+            const hasRec = document.getElementById("chkReceiving").checked;
+            const hasPut = document.getElementById("chkPutaway").checked;
+            const hasPick = document.getElementById("chkPicking").checked;
+            const hasPack = document.getElementById("chkPacking").checked;
+            const hasAPI = document.getElementById("chkAPI").checked;
+
+            // Packing sealer increases processing speed and overall capacity by 30%
+            let mu = mu_base;
+            if (hasPack) {
+                mu = Math.round(mu_base * 1.3);
+            }
+
+            // Real throughput cannot exceed actual warehouse processing capacity
+            let throughput = lambda;
+            if (lambda > mu) {
+                throughput = mu;
+            }
+
+            // Calculate stage times based on checkboxes
+            let t_rec = hasRec ? 1.5 : 2.0;
+            let t_put = hasPut ? 2.0 : 3.0;
+            let t_pick = hasPick ? 2.0 : 4.0;
+            let t_pack = hasPack ? 1.0 : 2.0;
+            let t_out = hasAPI ? 0.5 : 1.0;
+
+            // If overloaded, queue wait times build up at packing & outbound
+            if (lambda > mu) {
+                const overloadRatio = lambda / mu;
+                t_pack += (overloadRatio - 1) * 8.0; 
+                t_out += (overloadRatio - 1) * 4.0;
+            }
+
+            const cycleTime = t_rec + t_put + t_pick + t_pack + t_out;
+            const cycleTimeDays = cycleTime / 24;
+            const wip_total = Math.round(throughput * cycleTimeDays);
+            const utilization = Math.min((lambda / mu) * 100, 150);
+
+            // Update KPI cards
+            document.getElementById("kpiThroughput").innerText = throughput.toLocaleString('vi-VN');
+            document.getElementById("kpiCycleTime").innerText = cycleTime.toFixed(1);
+            document.getElementById("kpiWIP").innerText = wip_total.toLocaleString('vi-VN');
+            document.getElementById("kpiUtilization").innerText = utilization.toFixed(1) + "%";
+
+            // Update status dots
+            const statusDot = document.getElementById("statusDot");
+            const utilStatusText = document.getElementById("kpiUtilStatus");
+            const badgeTOC = document.getElementById("badgeTOC");
+
+            if (utilization <= 80) {
+                statusDot.style.backgroundColor = "var(--success)";
+                utilStatusText.innerText = "Vận hành ổn định";
+                utilStatusText.style.color = "var(--success)";
+                badgeTOC.innerText = "Cân Bằng";
+                badgeTOC.className = "status-badge green";
+            } else if (utilization < 100) {
+                statusDot.style.backgroundColor = "var(--warning)";
+                utilStatusText.innerText = "Tiệm cận quá tải";
+                utilStatusText.style.color = "var(--warning)";
+                badgeTOC.innerText = "Tiệm Cận Nghẽn";
+                badgeTOC.className = "status-badge yellow";
+            } else {
+                statusDot.style.backgroundColor = "var(--danger)";
+                utilStatusText.innerText = "Quá tải nghiêm trọng";
+                utilStatusText.style.color = "var(--danger)";
+                badgeTOC.innerText = "Bị Nghẽn";
+                badgeTOC.className = "status-badge red";
+            }
+
+            // Update progress bars
+            const maxCTScale = 25.0;
+            document.getElementById("txtCT_rec").innerText = t_rec.toFixed(1) + " giờ";
+            document.getElementById("barCT_rec").style.width = (t_rec / maxCTScale * 100) + "%";
+            
+            document.getElementById("txtCT_put").innerText = t_put.toFixed(1) + " giờ";
+            document.getElementById("barCT_put").style.width = (t_put / maxCTScale * 100) + "%";
+            
+            document.getElementById("txtCT_pick").innerText = t_pick.toFixed(1) + " giờ";
+            document.getElementById("barCT_pick").style.width = (t_pick / maxCTScale * 100) + "%";
+            
+            document.getElementById("txtCT_pack").innerText = t_pack.toFixed(1) + " giờ";
+            document.getElementById("barCT_pack").style.width = (t_pack / maxCTScale * 100) + "%";
+            
+            document.getElementById("txtCT_out").innerText = t_out.toFixed(1) + " giờ";
+            document.getElementById("barCT_out").style.width = (t_out / maxCTScale * 100) + "%";
+
+            // Calculate baselines for comparison
+            const wInfo = warehouses[currentWarehouse];
+            const baselineLambda = (currentScenario === "mega") ? Math.round(wInfo.lambda * 1.3) : wInfo.lambda;
+            const beforeWIP = Math.round(baselineLambda * (12.0 / 24)); // Baseline cycle time is 12h (0.5 days)
+            
+            const maxWipScale = Math.max(beforeWIP, wip_total, 100) * 1.1;
+
+            document.getElementById("barCurrent").style.height = (beforeWIP / maxWipScale * 100) + "%";
+            document.getElementById("barCurrentVal").innerText = beforeWIP.toLocaleString('vi-VN');
+            document.getElementById("barTarget").style.height = (wip_total / maxWipScale * 100) + "%";
+            document.getElementById("barTargetVal").innerText = wip_total.toLocaleString('vi-VN');
+
+            // Math card
+            document.getElementById("mathCTMins").innerText = cycleTime.toFixed(1);
+            document.getElementById("mathCTHours").innerText = cycleTimeDays.toFixed(4);
+            document.getElementById("mathCTHours2").innerText = cycleTimeDays.toFixed(4);
+            document.getElementById("mathThroughputPerHour").innerText = throughput.toLocaleString('vi-VN');
+            document.getElementById("mathThroughputCalc").innerText = throughput.toLocaleString('vi-VN');
+            document.getElementById("mathWIPTheory").innerText = wip_total.toLocaleString('vi-VN');
+            document.getElementById("mathWIPReal").innerText = wip_total.toLocaleString('vi-VN');
+
+            document.getElementById("mathLambda").innerText = lambda.toLocaleString('vi-VN');
+            document.getElementById("mathMu").innerText = mu.toLocaleString('vi-VN');
+            document.getElementById("mathRho").innerText = utilization.toFixed(1) + "%";
+
+            const deltaI = lambda - mu;
+            const mathTOCFormula = document.getElementById("mathTOCFormula");
+            const mathTOCExplain = document.getElementById("mathTOCExplain");
+
+            if (deltaI > 0) {
+                mathTOCFormula.innerHTML = `Hệ thống mất cân bằng (&lambda; &gt; &mu;).<br>Tốc độ tích lũy WIP: &Delta;I = ${lambda.toLocaleString('vi-VN')} - ${mu.toLocaleString('vi-VN')} = <strong>+${deltaI.toLocaleString('vi-VN')} CBM/ngày</strong>.`;
+                mathTOCFormula.style.color = "var(--danger)";
+                mathTOCExplain.innerText = "Điểm nghẽn nghiêm trọng! Lượng hàng đổ về vượt quá năng lực xử lý.";
+                mathTOCExplain.style.borderLeftColor = "var(--danger)";
+            } else {
+                mathTOCFormula.innerHTML = `Hệ thống ổn định (&lambda; &le; &mu;).<br>Dòng chảy cân bằng. Không xảy ra ùn tắc.<br>Công suất dự phòng: <strong>${(mu - lambda).toLocaleString('vi-VN')} CBM/ngày</strong>.`;
+                mathTOCFormula.style.color = "var(--success)";
+                mathTOCExplain.innerText = "Dòng chảy cân bằng, các khâu vận hành nằm trong tầm kiểm soát.";
+                mathTOCExplain.style.borderLeftColor = "var(--success)";
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const w = canvas.width;
+            const h = canvas.height;
+            const centerY = h / 2 + 10;
+            const startX = 60;
+            const endX = w - 60;
+            const distance = (endX - startX) / 4;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, centerY);
+            ctx.lineTo(endX, centerY);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            const lambda = parseInt(document.getElementById("sliderThroughput").value);
+            const mu_base = parseInt(document.getElementById("sliderCapacity").value);
+            const hasRec = document.getElementById("chkReceiving").checked;
+            const hasPut = document.getElementById("chkPutaway").checked;
+            const hasPick = document.getElementById("chkPicking").checked;
+            const hasPack = document.getElementById("chkPacking").checked;
+            const hasAPI = document.getElementById("chkAPI").checked;
+
+            const mu = hasPack ? Math.round(mu_base * 1.3) : mu_base;
+            const utilization = lambda / mu;
+
+            // Generate particles proportional to throughput
+            if (Math.random() < (lambda / 8000) * 0.25) {
+                particles.push({
+                    x: startX,
+                    stage: 0,
+                    y: centerY + (Math.random() * 16 - 8),
+                    size: 5 + Math.random() * 3,
+                    speed: 1.5 + Math.random() * 0.5
+                });
+            }
+
+            stages.forEach((stage, idx) => {
+                const stageX = startX + idx * distance;
+                let glowColor = stage.color;
+                
+                // Highlight bottlenecks
+                if (idx === 3 && utilization > 1.0) {
+                    glowColor = "var(--danger)";
+                } else if (idx === 3 && utilization > 0.8) {
+                    glowColor = "var(--warning)";
+                }
+
+                ctx.beginPath();
+                ctx.arc(stageX, centerY, 20, 0, Math.PI * 2);
+                ctx.fillStyle = "#0c1020";
+                ctx.strokeStyle = glowColor;
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = glowColor;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                const initials = ["RV", "PA", "PK", "PC", "OB"];
+                ctx.font = "bold 11px 'Space Grotesk'";
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(initials[idx], stageX, centerY);
+
+                ctx.font = "bold 9px 'Outfit'";
+                ctx.fillStyle = "#9ca3af";
+                ctx.fillText(stage.name.split(" ")[0], stageX, centerY + 30);
+            });
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                const targetX = startX + p.stage * distance;
+
+                if (p.x < targetX) {
+                    p.x += p.speed;
+                } else {
+                    let holdChance = 0.05;
+                    if (p.stage === 0) holdChance = hasRec ? 0.12 : 0.06;
+                    else if (p.stage === 1) holdChance = hasPut ? 0.12 : 0.06;
+                    else if (p.stage === 2) holdChance = hasPick ? 0.12 : 0.06;
+                    else if (p.stage === 3) {
+                        const procFactor = hasPack ? 0.12 : 0.06;
+                        holdChance = procFactor / (1 + (utilization > 1.0 ? (utilization - 1.0) * 3 : 0));
+                    }
+                    else if (p.stage === 4) holdChance = hasAPI ? 0.15 : 0.08;
+
+                    if (Math.random() < holdChance) {
+                        p.stage++;
+                    }
+                }
+
+                if (p.stage >= 5) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.fillStyle = stages[p.stage].color;
+                ctx.shadowColor = stages[p.stage].color;
+                ctx.shadowBlur = 4;
+                ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+                ctx.shadowBlur = 0;
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>

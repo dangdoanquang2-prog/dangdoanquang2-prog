@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriVision Smart Dock Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        header { background-color: #2c3e50; color: white; padding: 1rem; text-align: center; border-radius: 8px; margin-bottom: 20px;}
+        .container { display: flex; flex-wrap: wrap; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; min-width: 300px;}
+        h2 { color: #27ae60; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;}
+        .status { font-weight: bold; color: #e67e22; }
+        .success { color: #27ae60; font-weight: bold;}
+        .error { color: #c0392b; font-weight: bold;}
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
+        input, button { padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; width: calc(100% - 22px); box-sizing: border-box;}
+        button { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; width: 100%;}
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #preview { max-width: 100%; max-height: 200px; display: none; margin-top: 10px; border-radius: 8px; border: 2px dashed #ccc; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AgriVision Smart Dock</h1>
+        <p>Zero-Touch Logistics - PoC Dashboard</p>
+    </header>
+
+    <div class="container">
+        <!-- Panel 1: Điều khiển quét -->
+        <div class="card">
+            <h2>📦 Tiếp nhận Lô hàng</h2>
+            <label for="batchId">Mã lô hàng (Batch ID):</label><br>
+            <input type="text" id="batchId" placeholder="VD: BATCH-002"><br>
+            
+            <label for="imageUpload">Tải ảnh dưa lưới lên (Camera feed):</label><br>
+            <input type="file" id="imageUpload" accept="image/*" onchange="previewImage(event)"><br>
+            <img id="preview" src="" alt="Image Preview">
+
+            <button id="scanBtn" onclick="startScan()">Bắt đầu Quét AI</button>
+            <p id="scanStatus" class="status"></p>
+        </div>
+
+        <!-- Panel 2: Kết quả AI -->
+        <div class="card">
+            <h2>🧠 Kết quả AI (YOLOv8 Computer Vision)</h2>
+            <p>Trạng thái: <span id="aiStatus">Đang chờ...</span></p>
+            <ul id="aiResultList">
+                <li>Số quả đếm được: -</li>
+                <li>Tổng trọng lượng ước tính: - Tấn</li>
+                <li>Loại 1 (Xuất khẩu): -</li>
+                <li>Hàng lỗi/dập nát: -</li>
+            </ul>
+        </div>
+
+        <!-- Panel 3: Blockchain -->
+        <div class="card">
+            <h2>🔗 Blockchain (The Web3 Trust)</h2>
+            <p>Trạng thái: <span id="bcStatus">Đang chờ...</span></p>
+            <p>TxHash: <span id="bcTxHash">-</span></p>
+        </div>
+    </div>
+
+    <!-- Panel 4: Tồn kho -->
+    <div class="container" style="margin-top: 20px;">
+        <div class="card" style="flex: 100%;">
+            <h2>📊 Kế toán & Tồn kho số (The System Brain)</h2>
+            <button onclick="fetchInventory()" style="width: auto; padding: 10px 20px;">Làm mới danh sách</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Batch ID</th>
+                        <th>Tổng (Tấn)</th>
+                        <th>Loại 1 (Tấn)</th>
+                        <th>Lỗi (Tấn)</th>
+                        <th>Thời gian</th>
+                        <th>TxHash</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryTableBody">
+                    <!-- Dữ liệu sẽ được chèn vào đây -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000";
+
+        function previewImage(event) {
+            const preview = document.getElementById('preview');
+            const file = event.target.files[0];
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        async function startScan() {
+            const batchId = document.getElementById('batchId').value;
+            const fileInput = document.getElementById('imageUpload');
+            
+            if(!batchId || fileInput.files.length === 0) {
+                alert("Vui lòng nhập mã lô hàng và chọn một bức ảnh!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('batch_id', batchId);
+            formData.append('file', fileInput.files[0]);
+
+            // Cập nhật UI loading
+            const scanBtn = document.getElementById('scanBtn');
+            const scanStatus = document.getElementById('scanStatus');
+            scanBtn.disabled = true;
+            scanStatus.innerText = "⏳ Hệ thống đang chạy YOLOv8 Inference...";
+            document.getElementById('aiStatus').innerHTML = "<span class='status'>Đang phân tích Computer Vision...</span>";
+            document.getElementById('bcStatus').innerText = "Đang chờ dữ liệu AI...";
+
+            try {
+                // Gọi API với FormData
+                const response = await fetch(`${API_BASE_URL}/api/scan-shipment`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+
+                if(response.ok && !data.error) {
+                    scanStatus.innerHTML = "<span class='success'>✅ Hoàn tất!</span>";
+                    
+                    // Cập nhật Panel AI
+                    document.getElementById('aiStatus').innerHTML = "<span class='success'>YOLOv8 quét thành công</span>";
+                    document.getElementById('aiResultList').innerHTML = `
+                        <li>Số quả đếm được: <b>${data.ai_data.melon_count}</b> Quả</li>
+                        <li>Tổng khối lượng ước tính: <b>${data.ai_data.total_weight}</b> Tấn</li>
+                        <li>Loại 1 (Xuất khẩu): <b>${data.ai_data.type_1}</b> Tấn</li>
+                        <li>Hàng lỗi/dập nát: <b>${data.ai_data.bad_quality}</b> Tấn</li>
+                    `;
+
+                    // Cập nhật Panel Blockchain
+                    document.getElementById('bcStatus').innerHTML = "<span class='success'>Đã ký Metadata (CIP-20)</span>";
+                    document.getElementById('bcTxHash').innerHTML = `<code>${data.blockchain_tx}</code>`;
+
+                    // Cập nhật tồn kho
+                    fetchInventory();
+                } else {
+                    scanStatus.innerHTML = `<span class='error'>❌ Lỗi: ${data.error || 'Unknown error'}</span>`;
+                    document.getElementById('aiStatus').innerText = "Thất bại";
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                scanStatus.innerHTML = "<span class='error'>❌ Không thể kết nối tới Server. Đảm bảo Backend đang chạy.</span>";
+            } finally {
+                scanBtn.disabled = false;
+            }
+        }
+
+        async function fetchInventory() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/inventory`);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('inventoryTableBody');
+                tbody.innerHTML = '';
+
+                data.items.forEach(item => {
+                    const row = `<tr>
+                        <td><strong>${item.batch_id}</strong></td>
+                        <td>${item.total_weight}</td>
+                        <td class="success">${item.type_1_weight}</td>
+                        <td class="error">${item.bad_weight}</td>
+                        <td>${new Date(item.timestamp).toLocaleString()}</td>
+                        <td><code style="font-size: 0.8em">${item.tx_hash}</code></td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } catch(e) {
+                console.error("Error fetching inventory", e);
+            }
+        }
+
+        window.onload = fetchInventory;
+    </script>
+</body>
+</html>

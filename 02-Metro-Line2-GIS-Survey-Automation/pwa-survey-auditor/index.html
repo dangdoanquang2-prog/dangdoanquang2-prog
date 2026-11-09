@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FormsMobile - App Khảo Sát Chuẩn Google Forms</title>
+  <meta name="description" content="Ứng dụng tạo và điền khảo sát chuẩn di động tương tự Google Forms">
+  <meta name="theme-color" content="#673ab7">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3208/3208726.png">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gpurple: {
+              50: '#f3e8ff',
+              100: '#e9d5ff',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#673ab7',
+              800: '#5b21b6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body class="theme-light min-h-full flex flex-col antialiased">
+
+  <div id="app" class="flex-1 flex flex-col min-h-screen">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="app-header sticky top-0 z-40 px-4 py-3 shadow-sm">
+      <div class="max-w-4xl mx-auto flex items-center justify-between">
+        <!-- Logo / Title -->
+        <div class="flex items-center space-x-2.5 cursor-pointer" @click="goHome">
+          <div
+            class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-700 to-indigo-600 flex items-center justify-center shadow-md shadow-purple-600/30">
+            <i class="fa-solid fa-square-poll-vertical text-lg text-white"></i>
+          </div>
+          <div>
+            <h1 class="font-extrabold text-lg tracking-tight leading-none text-purple-700 dark:text-purple-300">
+              FormsMobile
+            </h1>
+            <span
+              class="text-[10px] uppercase font-extrabold tracking-wider text-purple-600 dark:text-purple-400">Google
+              Forms Aesthetic</span>
+          </div>
+        </div>
+
+        <!-- Right Header Action Controls -->
+        <div class="flex items-center space-x-2">
+          <!-- Nút Admin đã bị ẩn khỏi giao diện người điền để tăng bảo mật -->
+          <!-- Admin chỉ truy cập qua URL gốc Cloudflare (không có ?form=) -->
+
+          <!-- Supabase Cloud Button -->
+          <button v-if="!isRespondentOnly" id="btn-supabase-modal-open" @click="openSupabaseModal"
+            title="Cấu hình kết nối cơ sở dữ liệu Supabase Cloud"
+            class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border"
+            :class="supabaseModal.isConnected ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+            <i class="fa-solid fa-cloud text-xs"
+              :class="supabaseModal.isConnected ? 'text-emerald-600' : 'text-slate-400'"></i>
+            <span class="hidden sm:inline">{{ supabaseModal.isConnected ? 'Đã nối Cloud' : 'Kết nối Cloud' }}</span>
+          </button>
+
+          <!-- Theme Switcher -->
+          <button id="toggle-theme-mode-btn" @click="toggleThemeMode"
+            title="Chuyển đổi giao diện Sáng (Google Forms) / Tối"
+            class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm border"
+            :class="themeMode === 'light' ? 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200' : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'">
+            <i class="fa-solid"
+              :class="themeMode === 'light' ? 'fa-sun text-amber-500' : 'fa-moon text-indigo-400'"></i>
+            <span>{{ themeMode === 'light' ? 'Giao diện Google' : 'Giao diện Tối' }}</span>
+          </button>
+
+          <!-- Frame Mockup Toggle (for desktop testing) -->
+          <button id="toggle-preview-frame-btn" @click="isMobilePreview = !isMobilePreview"
+            title="Bật/Tắt Khung Giả Lập Điện Thoại"
+            class="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border"
+            :class="themeMode === 'light' ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'">
+            <i class="fa-solid fa-mobile-screen"></i>
+            <span>{{ isMobilePreview ? 'Xem Full Screen' : 'Khung Di Động' }}</span>
+          </button>
+
+          <!-- New Survey Button -->
+          <button id="btn-create-top-header" v-if="currentView === 'home'" @click="createNewSurvey"
+            class="px-3.5 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-purple-700/30 active:scale-95 transition">
+            <i class="fa-solid fa-plus"></i>
+            <span>Tạo mới</span>
+          </button>
+
+          <button v-if="currentView !== 'home'" @click="goHome"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 border transition"
+            :class="themeMode === 'light' ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'">
+            <i class="fa-solid fa-house text-xs"></i>
+            <span>Trang chủ</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER (Wrapper for optional Phone Frame preview) -->
+    <div :class="{'mobile-frame-container': isMobilePreview}" class="flex-1">
+
+      <div :class="{'mobile-mockup-frame': isMobilePreview}" class="w-full max-w-4xl mx-auto flex-1 flex flex-col">
+        <!-- Phone Notch (visible only in phone preview mode) -->
+        <div v-if="isMobilePreview" class="mobile-mockup-notch"></div>
+
+        <!-- CONTENT VIEW WRAPPER -->
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto pb-24">
+
+          <!-- ================= 1. HOME VIEW (SURVEY LIST) ================= -->
+          <div v-if="currentView === 'home'" class="space-y-6 fade-enter-active">
+
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-3xl p-6 border shadow-lg"
+              :class="themeMode === 'light' ? 'bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 text-white border-purple-600' : 'bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-slate-900 text-white border-indigo-500/20'">
+              <div class="relative z-10 space-y-2">
+                <span
+                  class="px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-extrabold uppercase tracking-wider backdrop-blur-md">
+                  Giao diện chuẩn Google Forms 📱
+                </span>
+                <h2 class="text-xl md:text-2xl font-extrabold">Tạo & Điền Khảo Sát Tối Ưu Mobile</h2>
+                <p class="text-xs md:text-sm text-purple-100 dark:text-slate-300 leading-relaxed max-w-lg">
+                  Tải cực nhanh trên điện thoại, giao diện sạch sẽ chuẩn UX/UI và theo dõi kết quả biểu đồ thời gian
+                  thực.
+                </p>
+                <div class="pt-2 flex flex-wrap gap-3">
+                  <button id="btn-create-hero" @click="createNewSurvey"
+                    class="px-4 py-2.5 rounded-xl bg-white text-purple-800 font-extrabold text-xs md:text-sm flex items-center space-x-2 shadow-lg hover:bg-purple-50 touch-active transition">
+                    <i class="fa-solid fa-circle-plus"></i>
+                    <span>Tạo biểu mẫu khảo sát mới</span>
+                  </button>
+                  <button @click="openSupabaseModal"
+                    class="px-4 py-2.5 rounded-xl bg-purple-900/40 hover:bg-purple-900/60 text-white font-extrabold text-xs md:text-sm flex items-center space-x-2 border border-white/20 backdrop-blur-md transition">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Kết nối CSDL Supabase Cloud</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Survey List Header -->
+            <div class="flex items-center justify-between pt-2">
+              <h3 class="text-base font-extrabold flex items-center space-x-2"
+                :class="themeMode === 'light' ? 'text-slate-800' : 'text-slate-200'">
+                <i class="fa-solid fa-list-check text-purple-600"></i>
+                <span>Danh sách khảo sát ({{ surveys.length }})</span>
+              </h3>
+
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-lg border"
+                :class="supabaseModal.isConnected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'">
+                <i class="fa-solid fa-database mr-1"></i>
+                {{ supabaseModal.isConnected ? 'Lưu trữ Cloud (Supabase)' : 'Lưu trữ Trình duyệt (LocalStorage)' }}
+              </span>
+            </div>
+
+            <!-- Empty State -->
+            <div v-if="surveys.length === 0" class="text-center py-12 px-4 rounded-3xl border border-dashed"
+              :class="themeMode === 'light' ? 'bg-white border-slate-300' : 'bg-slate-900/50 border-slate-800'">
+              <div
+                class="w-16 h-16 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-2xl">
+                <i class="fa-solid fa-clipboard-question"></i>
+              </div>
+              <h4 class="font-bold text-base" :class="themeMode === 'light' ? 'text-slate-800' : 'text-slate-300'">Chưa
+                có khảo sát nào</h4>
+              <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Hãy bấm "Tạo biểu mẫu mới" để khởi tạo bài khảo
+                sát đầu tiên!</p>
+              <button @click="createNewSurvey"
+                class="mt-4 px-4 py-2 rounded-xl bg-purple-700 text-white text-xs font-bold shadow-md">
+                + Tạo biểu mẫu ngay
+              </button>
+            </div>
+
+            <!-- Survey Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div v-for="survey in surveys" :key="survey.id"
+                class="glass-card rounded-2xl p-4 transition-all space-y-3 flex flex-col justify-between"
+                :class="themeMode === 'light' ? 'hover:border-purple-400' : 'hover:border-indigo-500/40'">
+                <div>
+                  <div class="flex items-start justify-between gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold"
+                      :class="themeMode === 'light' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'">
+                      {{ survey.questions ? survey.questions.length : 0 }} câu hỏi
+                    </span>
+                    <span class="text-[11px] text-slate-400">
+                      <i class="fa-regular fa-clock mr-1"></i>{{ formatDate(survey.updatedAt) }}
+                    </span>
+                  </div>
+
+                  <h4 class="font-extrabold text-base mt-2 line-clamp-2 leading-snug"
+                    :class="themeMode === 'light' ? 'text-slate-900' : 'text-slate-100'">
+                    {{ survey.title }}
+                  </h4>
+                  <p class="text-xs line-clamp-2 mt-1"
+                    :class="themeMode === 'light' ? 'text-slate-600' : 'text-slate-400'">
+                    {{ survey.description }}
+                  </p>
+                </div>
+
+                <!-- Card Actions -->
+                <div class="pt-3 border-t flex items-center justify-between gap-2"
+                  :class="themeMode === 'light' ? 'border-slate-100' : 'border-slate-800/80'">
+                  <div class="flex items-center space-x-1.5">
+                    <!-- Edit Button -->
+                    <button :id="'btn-edit-' + survey.id" @click="editSurvey(survey.id)" title="Chỉnh sửa khảo sát"
+                      class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 border transition"
+                      :class="themeMode === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200' : 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border-slate-700'">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                      <span>Sửa</span>
+                    </button>
+
+                    <!-- Respondent Button -->
+                    <button :id="'btn-fill-' + survey.id" @click="openViewer(survey.id)"
+                      title="Điền thử giao diện người dùng"
+                      class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 border transition"
+                      :class="themeMode === 'light' ? 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 border-indigo-500/30'">
+                      <i class="fa-solid fa-paper-plane"></i>
+                      <span>Điền mẫu</span>
+                    </button>
+
+                    <!-- Analytics Button -->
+                    <button :id="'btn-analytics-' + survey.id" @click="openAnalytics(survey.id)"
+                      title="Xem kết quả & báo cáo"
+                      class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 border transition"
+                      :class="themeMode === 'light' ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30'">
+                      <i class="fa-solid fa-chart-pie"></i>
+                      <span>Thống kê</span>
+                    </button>
+                  </div>
+
+                  <div class="flex items-center space-x-1">
+                    <!-- Share / QR Button -->
+                    <button :id="'btn-share-' + survey.id" @click="openShareModal(survey)" title="Xuất mã QR & Link"
+                      class="p-2 rounded-lg text-xs border transition"
+                      :class="themeMode === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'">
+                      <i class="fa-solid fa-qrcode"></i>
+                    </button>
+
+                    <!-- Delete Button -->
+                    <button :id="'btn-delete-' + survey.id" @click="deleteSurveyConfirm(survey.id)" title="Xóa khảo sát"
+                      class="p-2 rounded-lg text-xs border transition"
+                      :class="themeMode === 'light' ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200' : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20'">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- ================= 2. FORM EDITOR VIEW (NGƯỜI TẠO FORM) ================= -->
+          <div v-if="currentView === 'editor'" class="space-y-5 fade-enter-active">
+
+            <!-- Editor Subheader Toolbar -->
+            <div class="flex items-center justify-between p-3 rounded-2xl border shadow-sm"
+              :class="themeMode === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'">
+              <div class="flex items-center space-x-2">
+                <button @click="goHome" class="p-2 rounded-lg text-xs hover:opacity-80 border"
+                  :class="themeMode === 'light' ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-800 text-slate-300 border-slate-700'">
+                  <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <span class="font-extrabold text-xs md:text-sm"
+                  :class="themeMode === 'light' ? 'text-slate-800' : 'text-slate-200'">Trình tạo bài khảo sát</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button id="btn-editor-preview" @click="openViewer(currentSurvey.id)"
+                  class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 border"
+                  :class="themeMode === 'light' ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' : 'bg-slate-800 text-indigo-300 border-slate-700 hover:bg-slate-700'">
+                  <i class="fa-solid fa-eye"></i>
+                  <span>Xem trước</span>
+                </button>
+
+                <button id="btn-editor-save" @click="saveSurveyEditor"
+                  class="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold flex items-center space-x-1.5 shadow-md shadow-purple-700/30">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Lưu Form</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Form Header Info Card -->
+            <div class="glass-card rounded-2xl p-6 forms-top-bar-purple space-y-4 shadow-sm"
+              :class="themeMode === 'light' ? 'bg-white' : ''">
+              <div>
+                <input id="input-survey-title" v-model="currentSurvey.title" type="text"
+                  placeholder="Tiêu đề bài khảo sát..."
+                  class="w-full text-xl md:text-2xl font-extrabold border-b-2 py-2 focus:outline-none transition"
+                  :class="themeMode === 'light' ? 'bg-transparent border-purple-200 focus:border-purple-700 text-slate-900 placeholder-slate-400' : 'bg-slate-950/60 border-slate-800 focus:border-indigo-500 text-slate-100 rounded-xl px-3'" />
+              </div>
+
+              <div>
+                <textarea id="input-survey-desc" v-model="currentSurvey.description" rows="2"
+                  placeholder="Mô tả hoặc hướng dẫn điền khảo sát..."
+                  class="w-full text-xs md:text-sm border-b py-1.5 focus:outline-none transition"
+                  :class="themeMode === 'light' ? 'bg-transparent border-slate-200 focus:border-purple-700 text-slate-700 placeholder-slate-400' : 'bg-slate-950/60 border-slate-800 focus:border-indigo-500 text-slate-300 rounded-xl px-3'"></textarea>
+              </div>
+
+              <div class="text-[11px] font-semibold text-rose-600 flex items-center space-x-1 pt-1">
+                <span>* Biểu thị câu hỏi bắt buộc</span>
+              </div>
+            </div>
+
+            <!-- Question Builder List -->
+            <div class="space-y-4">
+              <div v-for="(question, qIndex) in currentSurvey.questions" :key="question.id"
+                class="glass-card rounded-2xl p-5 space-y-4 relative border transition shadow-sm"
+                :class="themeMode === 'light' ? 'bg-white border-slate-200 hover:border-purple-300' : 'border-slate-800 hover:border-slate-700'">
+                <!-- Card Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <span class="w-7 h-7 rounded-lg font-extrabold text-xs flex items-center justify-center shrink-0"
+                    :class="themeMode === 'light' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-600/20 text-indigo-400'">
+                    {{ qIndex + 1 }}
+                  </span>
+
+                  <input :id="'input-q-title-' + qIndex" v-model="question.title" type="text"
+                    placeholder="Nhập nội dung câu hỏi..."
+                    class="flex-1 font-extrabold text-sm border-b-2 py-2 focus:outline-none transition"
+                    :class="themeMode === 'light' ? 'bg-transparent border-slate-200 focus:border-purple-700 text-slate-900' : 'bg-slate-950/80 border-slate-800 focus:border-indigo-500 text-slate-100 rounded-xl px-3'" />
+
+                  <!-- Question Type Selector -->
+                  <select :id="'select-q-type-' + qIndex" v-model="question.type" @change="handleTypeChange(question)"
+                    class="rounded-xl px-3 py-2 text-xs font-bold border focus:outline-none"
+                    :class="themeMode === 'light' ? 'bg-slate-50 text-slate-800 border-slate-300 focus:border-purple-700' : 'bg-slate-900 text-slate-300 border-slate-700 focus:border-indigo-500'">
+                    <option value="single_choice">🔘 Chọn một (Radio)</option>
+                    <option value="multiple_choice">☑️ Chọn nhiều (Checkbox)</option>
+                    <option value="dropdown">🔽 Menu thả xuống (Dropdown)</option>
+                    <option value="text_short">📝 Trả lời ngắn</option>
+                    <option value="text_long">📄 Đoạn văn dài</option>
+                    <option value="rating_5">⭐ Đánh giá sao (1-5)</option>
+                    <option value="grid_single">▦ Lưới trắc nghiệm (Grid Radio)</option>
+                    <option value="grid_multiple">▤ Lưới hộp kiểm (Grid Checkbox)</option>
+                    <option value="date">📅 Ngày</option>
+                    <option value="time">🕒 Giờ</option>
+                    <option value="file_upload">📁 Tải tệp đính kèm</option>
+                  </select>
+                </div>
+
+                <!-- Sub-description optional input -->
+                <input v-if="question.type !== 'title_block' && question.type !== 'section_break'"
+                  v-model="question.description" type="text" placeholder="Mô tả phụ cho câu hỏi (Tùy chọn)..."
+                  class="w-full text-xs italic border-b border-dashed py-1 focus:outline-none transition"
+                  :class="themeMode === 'light' ? 'bg-transparent border-slate-200 focus:border-purple-700 text-slate-600' : 'bg-slate-950/60 border-slate-800 text-slate-400 px-3'" />
+
+                <!-- Choice Options Editor -->
+                <div
+                  v-if="question.type === 'single_choice' || question.type === 'multiple_choice' || question.type === 'dropdown'"
+                  class="space-y-2.5 pl-2 md:pl-9">
+                  <div v-for="(opt, optIdx) in question.options" :key="optIdx"
+                    class="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div class="flex items-center space-x-2 flex-1">
+                      <i v-if="question.type === 'single_choice'"
+                        class="fa-regular fa-circle text-slate-400 text-xs"></i>
+                      <i v-else-if="question.type === 'dropdown'"
+                        class="fa-solid fa-list-ul text-slate-400 text-xs"></i>
+                      <i v-else class="fa-regular fa-square text-slate-400 text-xs"></i>
+
+                      <input :id="'input-opt-' + qIndex + '-' + optIdx" v-model="question.options[optIdx]" type="text"
+                        placeholder="Nhập tên lựa chọn..."
+                        class="flex-1 text-xs border-b py-1 focus:outline-none transition"
+                        :class="themeMode === 'light' ? 'bg-transparent border-slate-200 focus:border-purple-700 text-slate-800' : 'bg-slate-950/60 border-slate-800 focus:border-indigo-500 text-slate-200 rounded-lg px-3'" />
+                    </div>
+
+                    <!-- Conditional Logic dropdown per option -->
+                    <div
+                      v-if="(question.type === 'single_choice' || question.type === 'dropdown') && surveySections && surveySections.length > 1"
+                      class="flex items-center space-x-1 shrink-0">
+                      <span class="text-[10px] font-bold text-slate-400"><i
+                          class="fa-solid fa-code-branch text-purple-600"></i> Rẽ nhánh:</span>
+                      <select v-model="question.logicMap[opt]"
+                        class="text-[11px] p-1 rounded-lg border font-semibold bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                        <option value="">Tiếp tục phần sau</option>
+                        <option v-for="(sec, sIdx) in surveySections" :key="sIdx" :value="sIdx">Sang Phần {{ sIdx + 1
+                          }}: {{ sec.title }}</option>
+                        <option value="submit">Gửi biểu mẫu</option>
+                      </select>
+                    </div>
+
+                    <button @click="removeOption(question, optIdx)" title="Xóa lựa chọn"
+                      class="p-1.5 text-slate-400 hover:text-rose-600 text-xs transition self-end sm:self-center">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+
+                  <button :id="'btn-add-option-' + qIndex" @click="addOption(question)"
+                    class="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center space-x-1 pt-1">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                    <span>Thêm tùy chọn</span>
+                  </button>
+                </div>
+
+                <!-- GRID ROWS & COLUMNS EDITOR -->
+                <div v-if="question.type === 'grid_single' || question.type === 'grid_multiple'"
+                  class="space-y-4 pl-2 md:pl-9 pt-2">
+                  <div class="space-y-2">
+                    <div class="text-xs font-bold text-slate-500">Danh sách Hàng (Rows):</div>
+                    <div v-for="(r, rIdx) in question.rows" :key="rIdx" class="flex items-center space-x-2">
+                      <span class="text-xs font-bold text-slate-400 w-5">{{ rIdx + 1 }}.</span>
+                      <input v-model="question.rows[rIdx]" type="text" placeholder="Tên hàng..."
+                        class="flex-1 text-xs border-b py-1 focus:outline-none"
+                        :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 text-slate-200 px-2'" />
+                      <button @click="removeRow(question, rIdx)"
+                        class="p-1 text-slate-400 hover:text-rose-600 text-xs"><i
+                          class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <button @click="addRow(question)"
+                      class="text-xs font-bold text-purple-700 flex items-center space-x-1"><i
+                        class="fa-solid fa-plus text-[10px]"></i><span>Thêm hàng</span></button>
+                  </div>
+
+                  <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div class="text-xs font-bold text-slate-500">Danh sách Cột (Columns):</div>
+                    <div v-for="(c, cIdx) in question.columns" :key="cIdx" class="flex items-center space-x-2">
+                      <span class="text-xs font-bold text-slate-400 w-5">{{ cIdx + 1 }}.</span>
+                      <input v-model="question.columns[cIdx]" type="text" placeholder="Tên cột..."
+                        class="flex-1 text-xs border-b py-1 focus:outline-none"
+                        :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 text-slate-200 px-2'" />
+                      <button @click="removeColumn(question, cIdx)"
+                        class="p-1 text-slate-400 hover:text-rose-600 text-xs"><i
+                          class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <button @click="addColumn(question)"
+                      class="text-xs font-bold text-indigo-700 flex items-center space-x-1"><i
+                        class="fa-solid fa-plus text-[10px]"></i><span>Thêm cột</span></button>
+                  </div>
+                </div>
+
+                <!-- Text / Rating Previews -->
+                <div v-if="question.type === 'text_short'" class="pl-2 md:pl-9">
+                  <input type="text" disabled placeholder="Câu trả lời của bạn"
+                    class="w-full text-xs border-b border-dashed py-2 cursor-not-allowed"
+                    :class="themeMode === 'light' ? 'border-slate-300 text-slate-400' : 'border-slate-800 text-slate-600'" />
+                </div>
+
+                <div v-if="question.type === 'text_long'" class="pl-2 md:pl-9">
+                  <textarea disabled rows="2" placeholder="Văn bản đoạn dài..."
+                    class="w-full text-xs border-b border-dashed py-2 cursor-not-allowed"
+                    :class="themeMode === 'light' ? 'border-slate-300 text-slate-400' : 'border-slate-800 text-slate-600'"></textarea>
+                </div>
+
+                <div v-if="question.type === 'rating_5'"
+                  class="pl-2 md:pl-9 flex items-center space-x-2 text-amber-400 text-lg">
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star"></i>
+                  <span class="text-xs font-normal ml-2"
+                    :class="themeMode === 'light' ? 'text-slate-500' : 'text-slate-400'">(Thang điểm 1 đến 5 sao)</span>
+                </div>
+
+                <!-- SPECIAL BLOCKS EDITORS -->
+                <div v-if="question.type === 'title_block'" class="space-y-2 pl-2 md:pl-9">
+                  <input v-model="question.title" type="text" placeholder="Tiêu đề phần..."
+                    class="w-full font-bold text-sm border-b py-1 focus:outline-none"
+                    :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 px-2'" />
+                  <textarea v-model="question.description" rows="2" placeholder="Nhập mô tả..."
+                    class="w-full text-xs border-b py-1 focus:outline-none"
+                    :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 px-2'"></textarea>
+                </div>
+
+                <div v-if="question.type === 'image_block'" class="space-y-2 pl-2 md:pl-9">
+                  <input v-model="question.title" type="text" placeholder="Chú thích ảnh..."
+                    class="w-full font-bold text-sm border-b py-1 focus:outline-none"
+                    :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 px-2'" />
+                  <input v-model="question.mediaUrl" type="text" placeholder="URL hình ảnh (https://...)"
+                    class="w-full text-xs border-b py-1 focus:outline-none"
+                    :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 px-2'" />
+                  <div v-if="question.mediaUrl" class="pt-1"><img :src="question.mediaUrl"
+                      class="max-h-48 rounded-xl border shadow-sm" /></div>
+                </div>
+
+                <div v-if="question.type === 'video_block'" class="space-y-2 pl-2 md:pl-9">
+                  <input v-model="question.title" type="text" placeholder="Tiêu đề video..."
+                    class="w-full font-bold text-sm border-b py-1 focus:outline-none"
+                    :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 px-2'" />
+                  <input v-model="question.mediaUrl" type="text"
+                    placeholder="URL nhúng YouTube (https://www.youtube.com/embed/...)"
+                    class="w-full text-xs border-b py-1 focus:outline-none"
+                    :class="themeMode === 'light' ? 'border-slate-200 focus:border-purple-700' : 'border-slate-800 focus:border-indigo-500 bg-slate-900 px-2'" />
+                </div>
+
+                <div v-if="question.type === 'section_break'"
+                  class="p-4 rounded-xl bg-purple-100/60 dark:bg-slate-900 border border-purple-200 dark:border-purple-500/30 space-y-2">
+                  <div class="flex items-center space-x-2 text-purple-800 dark:text-purple-300 font-extrabold text-xs">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>MỤC KHẢO SÁT MỚI (SECTION BREAK)</span>
+                  </div>
+                  <input v-model="question.title" type="text" placeholder="Tiêu đề mục..."
+                    class="w-full font-extrabold text-sm border-b border-purple-300 py-1 focus:outline-none bg-transparent" />
+                  <input v-model="question.description" type="text" placeholder="Mô tả mục này..."
+                    class="w-full text-xs border-b border-purple-200 py-1 focus:outline-none bg-transparent" />
+                </div>
+
+                <!-- Footer Controls -->
+                <div class="pt-3 border-t flex flex-wrap items-center justify-between text-xs gap-2"
+                  :class="themeMode === 'light' ? 'border-slate-100' : 'border-slate-800/60'">
+                  <div class="flex items-center space-x-4">
+                    <label
+                      v-if="question.type !== 'title_block' && question.type !== 'image_block' && question.type !== 'video_block' && question.type !== 'section_break'"
+                      class="flex items-center space-x-2 cursor-pointer select-none">
+                      <input :id="'toggle-required-' + qIndex" type="checkbox" v-model="question.required"
+                        class="sr-only peer" />
+                      <div
+                        class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-700 relative">
+                      </div>
+                      <span class="font-extrabold"
+                        :class="themeMode === 'light' ? 'text-slate-700' : 'text-slate-300'">Bắt buộc</span>
+                    </label>
+
+                    <label
+                      v-if="question.type === 'single_choice' || question.type === 'multiple_choice' || question.type === 'dropdown'"
+                      class="flex items-center space-x-1.5 cursor-pointer select-none">
+                      <input type="checkbox" v-model="question.shuffleOptions"
+                        class="rounded text-purple-600 focus:ring-purple-500 cursor-pointer" />
+                      <span class="font-bold text-slate-600 dark:text-slate-400 text-[11px]"><i
+                          class="fa-solid fa-shuffle text-purple-600 mr-1"></i>Xáo trộn tùy chọn</span>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center space-x-2">
+                    <button @click="moveQuestion(qIndex, -1)" :disabled="qIndex === 0"
+                      class="p-1.5 rounded-lg border hover:bg-slate-100 disabled:opacity-30"
+                      :class="themeMode === 'light' ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-slate-800 text-slate-400 border-slate-700'">
+                      <i class="fa-solid fa-arrow-up text-xs"></i>
+                    </button>
+                    <button @click="moveQuestion(qIndex, 1)" :disabled="qIndex === currentSurvey.questions.length - 1"
+                      class="p-1.5 rounded-lg border hover:bg-slate-100 disabled:opacity-30"
+                      :class="themeMode === 'light' ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-slate-800 text-slate-400 border-slate-700'">
+                      <i class="fa-solid fa-arrow-down text-xs"></i>
+                    </button>
+                    <button @click="duplicateQuestion(qIndex)" title="Nhân bản" class="p-1.5 rounded-lg border"
+                      :class="themeMode === 'light' ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' : 'bg-slate-800 text-indigo-400 border-slate-700'">
+                      <i class="fa-regular fa-copy text-xs"></i>
+                    </button>
+                    <button @click="removeQuestion(qIndex)" title="Xóa" class="p-1.5 rounded-lg border"
+                      :class="themeMode === 'light' ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100' : 'bg-slate-800 text-rose-400 border-slate-700'">
+                      <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- FLOATING ACTION TOOLBAR (RIGHT SIDE - GOOGLE FORMS STYLE) -->
+            <div v-if="currentView === 'editor'"
+              class="fixed right-3 top-1/3 z-30 flex flex-col space-y-2 p-2 rounded-2xl shadow-xl border glass-card transition-all"
+              :class="themeMode === 'light' ? 'bg-white/95 border-purple-200 text-slate-700' : 'bg-slate-900/95 border-slate-700 text-slate-200'">
+              <button @click="addQuestion('single_choice')" title="Thêm câu hỏi mới"
+                class="p-2.5 rounded-xl hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-slate-800 transition flex items-center justify-center">
+                <i class="fa-solid fa-plus-circle text-lg text-purple-700 dark:text-purple-400"></i>
+              </button>
+              <button @click="addTitleBlock()" title="Thêm tiêu đề & mô tả"
+                class="p-2.5 rounded-xl hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-slate-800 transition flex items-center justify-center">
+                <i class="fa-solid fa-font text-base font-black"></i>
+              </button>
+              <button @click="addImageBlock()" title="Thêm hình ảnh minh họa"
+                class="p-2.5 rounded-xl hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-slate-800 transition flex items-center justify-center">
+                <i class="fa-solid fa-image text-base"></i>
+              </button>
+              <button @click="addVideoBlock()" title="Thêm video minh họa"
+                class="p-2.5 rounded-xl hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-slate-800 transition flex items-center justify-center">
+                <i class="fa-solid fa-video text-base"></i>
+              </button>
+              <button @click="addSectionBlock()" title="Ngắt Phần khảo sát (Section Break)"
+                class="p-2.5 rounded-xl hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-slate-800 transition flex items-center justify-center border-t border-slate-200 dark:border-slate-800">
+                <i class="fa-solid fa-layer-group text-base text-purple-700 dark:text-purple-400"></i>
+              </button>
+            </div>
+
+            <!-- Bottom Add Question Quick Bar -->
+            <div class="pt-2">
+              <button id="btn-add-question-main" @click="addQuestion('single_choice')"
+                class="w-full py-3 rounded-2xl border font-bold text-xs md:text-sm flex items-center justify-center space-x-2 transition touch-active shadow-sm"
+                :class="themeMode === 'light' ? 'bg-white hover:bg-purple-50 border-purple-300 text-purple-700' : 'bg-indigo-600/10 hover:bg-indigo-600/20 border-indigo-500/30 text-indigo-300'">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>Thêm câu hỏi mới</span>
+              </button>
+            </div>
+          </div>
+
+
+          <!-- ================= 3. RESPONDENT VIEW (NGƯỜI ĐIỀN KHẢO SÁT) ================= -->
+          <div v-if="currentView === 'viewer'" class="max-w-2xl mx-auto space-y-4 fade-enter-active">
+
+            <!-- Success Screen Overlay -->
+            <div v-if="isSubmitted" class="text-center py-10 px-6 rounded-2xl glass-card border space-y-4 shadow-sm"
+              :class="themeMode === 'light' ? 'bg-white border-emerald-300' : 'border-emerald-500/30'">
+              <div
+                class="success-checkmark bg-emerald-500/20 flex items-center justify-center text-emerald-600 text-3xl">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <h3 class="text-2xl font-extrabold" :class="themeMode === 'light' ? 'text-slate-900' : 'text-white'">Gửi
+                Khảo Sát Thành Công!</h3>
+              <p class="text-xs md:text-sm max-w-md mx-auto"
+                :class="themeMode === 'light' ? 'text-slate-600' : 'text-slate-300'">
+                Câu trả lời của bạn đã được ghi nhận. Cảm ơn bạn đã tham gia đóng góp ý kiến!
+              </p>
+              <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button id="btn-reset-form" @click="resetFormRespondent"
+                  class="w-full sm:w-auto px-5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center space-x-2 shadow-sm"
+                  :class="themeMode === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'">
+                  <i class="fa-solid fa-rotate-right"></i>
+                  <span>Gửi câu trả lời khác</span>
+                </button>
+                <button @click="goHome"
+                  class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shadow-md">
+                  Về trang chủ
+                </button>
+              </div>
+            </div>
+
+            <!-- Form Content when filling -->
+            <div v-else class="space-y-4">
+
+              <!-- Form Top Title Card -->
+              <div class="glass-card rounded-2xl p-6 forms-top-bar-purple space-y-3 shadow-sm"
+                :class="themeMode === 'light' ? 'bg-white' : ''">
+                <h2 class="text-2xl md:text-3xl font-extrabold leading-tight"
+                  :class="themeMode === 'light' ? 'text-slate-900' : 'text-white'">
+                  {{ currentSurvey.title }}
+                </h2>
+                <p class="text-xs md:text-sm leading-relaxed"
+                  :class="themeMode === 'light' ? 'text-slate-600' : 'text-slate-300'">
+                  {{ currentSurvey.description }}
+                </p>
+
+                <!-- Required field notification line -->
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span class="text-rose-600 font-semibold">* Biểu thị câu hỏi bắt buộc</span>
+                  <span class="text-purple-700 font-bold text-[11px] flex items-center space-x-1">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>{{ completedProgress }}% Đã xong</span>
+                  </span>
+                </div>
+
+                <!-- GPS Location Badge -->
+                <div class="pt-2 border-t flex flex-wrap items-center justify-between text-xs gap-2"
+                  :class="themeMode === 'light' ? 'border-slate-100 text-slate-600' : 'border-slate-800 text-slate-300'">
+                  <div class="flex items-center space-x-1.5 font-medium">
+                    <i class="fa-solid fa-location-dot text-rose-500 text-sm animate-bounce"></i>
+                    <span>Tọa độ GPS:</span>
+                    <span v-if="isGettingLocation" class="text-amber-600 font-bold animate-pulse">Đang quét
+                      GPS...</span>
+                    <span v-else-if="userLocation && userLocation.address"
+                      class="text-purple-700 dark:text-purple-300 font-bold truncate max-w-xs md:max-w-md"
+                      :title="userLocation.address">{{ userLocation.address }}</span>
+                    <span v-else class="text-slate-400 font-semibold">{{ locationStatus || 'Chưa định vị' }}</span>
+                  </div>
+                  <button @click="fetchUserLocation" type="button"
+                    class="text-[11px] font-bold text-purple-700 dark:text-purple-400 hover:opacity-80 flex items-center space-x-1">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>Quét lại GPS</span>
+                  </button>
+                </div>
+
+                <!-- Completion Progress Bar -->
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-purple-700 h-full transition-all duration-300"
+                    :style="{ width: completedProgress + '%' }"></div>
+                </div>
+              </div>
+
+              <!-- AI VOICE ASSISTANT BANNER CARD -->
+              <div class="glass-card rounded-2xl p-4 border shadow-sm space-y-3"
+                :class="themeMode === 'light' ? 'bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-100 border-purple-200' : 'bg-slate-900 border-indigo-500/30'">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-center space-x-2.5">
+                    <div
+                      class="w-10 h-10 rounded-xl bg-purple-700 text-white flex items-center justify-center shadow-md shrink-0">
+                      <i class="fa-solid fa-wand-magic-sparkles text-lg" :class="{'animate-spin': isAiRecording}"></i>
+                    </div>
+                    <div>
+                      <h4 class="font-extrabold text-sm text-purple-900 dark:text-purple-300">Trợ Lý AI Phỏng Vấn Giọng
+                        Nói 🎙️</h4>
+                      <p class="text-xs text-purple-700 dark:text-slate-400">Ghi âm phỏng vấn để AI tự động trích xuất
+                        thông tin điền Form</p>
+                    </div>
+                  </div>
+
+                  <!-- Controls -->
+                  <div>
+                    <button v-if="!isAiRecording" @click="startAiRecording"
+                      class="w-full sm:w-auto px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold flex items-center justify-center space-x-2 shadow-md touch-active transition">
+                      <i class="fa-solid fa-microphone text-rose-400 animate-pulse"></i>
+                      <span>⚡ Bắt đầu phỏng vấn AI</span>
+                    </button>
+
+                    <button v-else @click="stopAiRecordingAndFill"
+                      class="w-full sm:w-auto px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold flex items-center justify-center space-x-2 shadow-md animate-pulse touch-active transition">
+                      <i class="fa-solid fa-circle-stop"></i>
+                      <span>⏹️ Dừng & AI Tự Điền Form</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Status & Live Transcript Box -->
+                <div v-if="isAiRecording || aiTranscript || audioUrl"
+                  class="space-y-2 pt-2 border-t border-purple-200/60 dark:border-slate-800">
+                  <div class="text-xs font-bold flex items-center justify-between text-purple-800 dark:text-purple-300">
+                    <span class="flex items-center space-x-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full"
+                        :class="isAiRecording ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'"></span>
+                      <span>{{ aiStatusMessage || (isAiRecording ? 'Đang ghi âm & lắng nghe...' : 'Đã hoàn tất')
+                        }}</span>
+                    </span>
+                  </div>
+
+                  <!-- Real-time transcript viewer -->
+                  <div v-if="aiTranscript"
+                    class="p-3 rounded-xl bg-white/80 dark:bg-slate-950 text-xs italic text-slate-700 dark:text-slate-300 max-h-24 overflow-y-auto border border-purple-100 dark:border-slate-800">
+                    💬 "{{ aiTranscript }}"
+                  </div>
+
+                  <!-- Audio Proof Player -->
+                  <div v-if="audioUrl" class="pt-1 flex items-center justify-between text-xs gap-2">
+                    <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1 shrink-0">
+                      <i class="fa-solid fa-file-audio text-purple-600"></i>
+                      <span>Bằng chứng âm thanh:</span>
+                    </span>
+                    <audio :src="audioUrl" controls class="h-8 max-w-full rounded-lg"></audio>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section Indicator Badge -->
+              <div v-if="surveySections && surveySections.length > 1" class="flex items-center justify-between px-1">
+                <span class="px-3 py-1 rounded-full text-xs font-black bg-purple-700 text-white shadow-sm">
+                  Phần {{ currentSectionIndex + 1 }} trên {{ surveySections.length }}
+                </span>
+                <span class="text-xs font-bold text-slate-500">
+                  {{ surveySections[currentSectionIndex].title }}
+                </span>
+              </div>
+
+              <!-- Question Items Form Cards -->
+              <div
+                v-for="(question, qIndex) in (surveySections && surveySections[currentSectionIndex] ? surveySections[currentSectionIndex].questions : currentSurvey.questions)"
+                :key="question.id"
+                :class="{'border-rose-500 bg-rose-50/50': validationErrors[question.id], 'bg-white border-slate-200': themeMode === 'light' && !validationErrors[question.id], 'border-slate-800': themeMode === 'dark'}"
+                class="glass-card rounded-2xl p-5 md:p-6 space-y-3 border transition shadow-sm">
+                <div class="space-y-1">
+                  <h3 class="font-extrabold text-base flex items-start space-x-1.5"
+                    :class="themeMode === 'light' ? 'text-slate-900' : 'text-slate-100'">
+                    <span>{{ question.title }}</span>
+                    <span v-if="question.required" class="text-rose-600 font-extrabold text-sm ml-0.5"
+                      title="Bắt buộc">*</span>
+                  </h3>
+                  <p v-if="question.description && question.type !== 'title_block' && question.type !== 'section_break'"
+                    class="text-xs text-slate-500 dark:text-slate-400 italic">
+                    {{ question.description }}
+                  </p>
+                </div>
+
+                <!-- Validation Error Notice -->
+                <p v-if="validationErrors[question.id]"
+                  class="text-xs text-rose-600 font-bold flex items-center space-x-1">
+                  <i class="fa-solid fa-circle-exclamation"></i>
+                  <span>{{ validationErrors[question.id] }}</span>
+                </p>
+
+                <!-- SINGLE CHOICE (RADIO) -->
+                <div v-if="question.type === 'single_choice'" class="space-y-2 pt-1">
+                  <div v-for="(opt, optIdx) in getRenderedOptions(question)" :key="optIdx"
+                    @click="handleSingleChoiceSelect(question.id, opt)"
+                    :class="{'choice-card-selected font-bold': respondentAnswers[question.id] === opt, 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100': themeMode === 'light' && respondentAnswers[question.id] !== opt, 'bg-slate-900/80 border-slate-800 text-slate-200': themeMode === 'dark' && respondentAnswers[question.id] !== opt}"
+                    class="p-3.5 rounded-xl border flex items-center justify-between cursor-pointer touch-active transition">
+                    <span class="text-xs md:text-sm font-medium">{{ opt }}</span>
+                    <div
+                      :class="{'border-purple-700 bg-purple-700': respondentAnswers[question.id] === opt, 'border-slate-400': respondentAnswers[question.id] !== opt}"
+                      class="w-5 h-5 rounded-full border-2 flex items-center justify-center">
+                      <div v-if="respondentAnswers[question.id] === opt" class="w-2 h-2 rounded-full bg-white"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- MULTIPLE CHOICE (CHECKBOX) -->
+                <div v-if="question.type === 'multiple_choice'" class="space-y-2 pt-1">
+                  <div v-for="(opt, optIdx) in getRenderedOptions(question)" :key="optIdx"
+                    @click="handleMultipleChoiceSelect(question.id, opt)"
+                    :class="{'choice-card-selected font-bold': (respondentAnswers[question.id] || []).includes(opt), 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100': themeMode === 'light' && !(respondentAnswers[question.id] || []).includes(opt), 'bg-slate-900/80 border-slate-800 text-slate-200': themeMode === 'dark' && !(respondentAnswers[question.id] || []).includes(opt)}"
+                    class="p-3.5 rounded-xl border flex items-center justify-between cursor-pointer touch-active transition">
+                    <span class="text-xs md:text-sm font-medium">{{ opt }}</span>
+                    <div
+                      :class="{'border-purple-700 bg-purple-700 text-white': (respondentAnswers[question.id] || []).includes(opt), 'border-slate-400': !(respondentAnswers[question.id] || []).includes(opt)}"
+                      class="w-5 h-5 rounded-lg border-2 flex items-center justify-center text-xs">
+                      <i v-if="(respondentAnswers[question.id] || []).includes(opt)" class="fa-solid fa-check"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SHORT TEXT INPUT -->
+                <div v-if="question.type === 'text_short'" class="pt-2 flex items-center space-x-2">
+                  <input :id="'input-answer-' + question.id" v-model="respondentAnswers[question.id]" type="text"
+                    :placeholder="question.placeholder || 'Câu trả lời của bạn'"
+                    class="flex-1 text-xs md:text-sm py-2 border-b-2 focus:outline-none transition"
+                    :class="themeMode === 'light' ? 'bg-transparent border-slate-300 focus:border-purple-700 text-slate-900 placeholder-slate-400' : 'bg-slate-950 border-slate-800 focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-3'" />
+                  <button @click="recordSingleQuestionVoice(question.id)" type="button"
+                    title="Nói để gõ câu trả lời này"
+                    class="p-2 rounded-xl border text-purple-700 hover:bg-purple-100 dark:bg-slate-800 dark:text-purple-300 dark:border-slate-700 shrink-0 transition">
+                    <i class="fa-solid fa-microphone text-xs"></i>
+                  </button>
+                </div>
+
+                <!-- LONG TEXT TEXTAREA -->
+                <div v-if="question.type === 'text_long'" class="pt-2 flex items-start space-x-2">
+                  <textarea :id="'input-answer-' + question.id" v-model="respondentAnswers[question.id]" rows="3"
+                    :placeholder="question.placeholder || 'Câu trả lời của bạn'"
+                    class="flex-1 text-xs md:text-sm py-2 border-b-2 focus:outline-none transition"
+                    :class="themeMode === 'light' ? 'bg-transparent border-slate-300 focus:border-purple-700 text-slate-900 placeholder-slate-400' : 'bg-slate-950 border-slate-800 focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-3'"></textarea>
+                  <button @click="recordSingleQuestionVoice(question.id)" type="button" title="Nói để gõ đoạn văn này"
+                    class="p-2 rounded-xl border text-purple-700 hover:bg-purple-100 dark:bg-slate-800 dark:text-purple-300 dark:border-slate-700 shrink-0 transition mt-1">
+                    <i class="fa-solid fa-microphone text-xs"></i>
+                  </button>
+                </div>
+
+                <!-- RATING 5 STARS -->
+                <div v-if="question.type === 'rating_5'" class="pt-2 flex items-center justify-center space-x-3">
+                  <button v-for="score in [1, 2, 3, 4, 5]" :key="score" @click="handleRatingSelect(question.id, score)"
+                    type="button" class="star-rating-item p-2 text-2xl focus:outline-none"
+                    :class="{'text-amber-400': (respondentAnswers[question.id] || 0) >= score, 'text-slate-300 dark:text-slate-700': (respondentAnswers[question.id] || 0) < score}">
+                    <i class="fa-solid fa-star"></i>
+                  </button>
+                </div>
+
+                <!-- DROPDOWN -->
+                <div v-if="question.type === 'dropdown'" class="pt-2">
+                  <select v-model="respondentAnswers[question.id]"
+                    class="w-full p-3 rounded-xl border text-xs md:text-sm font-semibold focus:outline-none"
+                    :class="themeMode === 'light' ? 'bg-slate-50 border-slate-300 text-slate-800 focus:border-purple-700' : 'bg-slate-900 border-slate-700 text-slate-200 focus:border-indigo-500'">
+                    <option value="" disabled selected>-- Chọn một lựa chọn --</option>
+                    <option v-for="(opt, oIdx) in question.options" :key="oIdx" :value="opt">{{ opt }}</option>
+                  </select>
+                </div>
+
+                <!-- GRID SINGLE (RADIO GRID) -->
+                <div v-if="question.type === 'grid_single'" class="pt-2 overflow-x-auto">
+                  <table class="w-full text-xs text-left border-collapse min-w-[300px]">
+                    <thead>
+                      <tr class="border-b"
+                        :class="themeMode === 'light' ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-900/50'">
+                        <th class="p-2.5 font-extrabold text-slate-500">Tiêu chí / Hàng</th>
+                        <th v-for="(col, cIdx) in question.columns" :key="cIdx"
+                          class="p-2.5 text-center font-extrabold text-purple-700 dark:text-purple-400">{{ col }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, rIdx) in question.rows" :key="rIdx" class="border-b"
+                        :class="themeMode === 'light' ? 'border-slate-100 hover:bg-purple-50/30' : 'border-slate-800 hover:bg-slate-900/30'">
+                        <td class="p-2.5 font-bold text-slate-700 dark:text-slate-200">{{ row }}</td>
+                        <td v-for="(col, cIdx) in question.columns" :key="cIdx" class="p-2.5 text-center">
+                          <input type="radio" :name="'grid_single_' + question.id + '_' + rIdx"
+                            :checked="respondentAnswers[question.id] && respondentAnswers[question.id][row] === col"
+                            @change="handleGridSingleSelect(question.id, row, col)"
+                            class="w-4 h-4 text-purple-600 focus:ring-purple-500 cursor-pointer" />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- GRID MULTIPLE (CHECKBOX GRID) -->
+                <div v-if="question.type === 'grid_multiple'" class="pt-2 overflow-x-auto">
+                  <table class="w-full text-xs text-left border-collapse min-w-[300px]">
+                    <thead>
+                      <tr class="border-b"
+                        :class="themeMode === 'light' ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-900/50'">
+                        <th class="p-2.5 font-extrabold text-slate-500">Tiêu chí / Hàng</th>
+                        <th v-for="(col, cIdx) in question.columns" :key="cIdx"
+                          class="p-2.5 text-center font-extrabold text-indigo-700 dark:text-indigo-400">{{ col }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, rIdx) in question.rows" :key="rIdx" class="border-b"
+                        :class="themeMode === 'light' ? 'border-slate-100 hover:bg-indigo-50/30' : 'border-slate-800 hover:bg-slate-900/30'">
+                        <td class="p-2.5 font-bold text-slate-700 dark:text-slate-200">{{ row }}</td>
+                        <td v-for="(col, cIdx) in question.columns" :key="cIdx" class="p-2.5 text-center">
+                          <input type="checkbox"
+                            :checked="respondentAnswers[question.id] && respondentAnswers[question.id][row] && respondentAnswers[question.id][row].includes(col)"
+                            @change="handleGridMultipleSelect(question.id, row, col)"
+                            class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer" />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- DATE -->
+                <div v-if="question.type === 'date'" class="pt-2">
+                  <input v-model="respondentAnswers[question.id]" type="date"
+                    class="w-full p-3 rounded-xl border text-xs md:text-sm font-semibold focus:outline-none"
+                    :class="themeMode === 'light' ? 'bg-slate-50 border-slate-300 text-slate-800 focus:border-purple-700' : 'bg-slate-900 border-slate-700 text-slate-200 focus:border-indigo-500'" />
+                </div>
+
+                <!-- TIME -->
+                <div v-if="question.type === 'time'" class="pt-2">
+                  <input v-model="respondentAnswers[question.id]" type="time"
+                    class="w-full p-3 rounded-xl border text-xs md:text-sm font-semibold focus:outline-none"
+                    :class="themeMode === 'light' ? 'bg-slate-50 border-slate-300 text-slate-800 focus:border-purple-700' : 'bg-slate-900 border-slate-700 text-slate-200 focus:border-indigo-500'" />
+                </div>
+
+                <!-- FILE UPLOAD -->
+                <div v-if="question.type === 'file_upload'" class="pt-2 space-y-2">
+                  <input @change="handleFileUpload(question.id, $event)" type="file"
+                    class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer" />
+                  <div v-if="respondentAnswers[question.id] && respondentAnswers[question.id].name"
+                    class="p-3 rounded-xl border text-xs flex items-center justify-between"
+                    :class="themeMode === 'light' ? 'bg-purple-50/50 border-purple-200 text-purple-900' : 'bg-slate-900 border-slate-800 text-purple-300'">
+                    <span class="font-bold truncate"><i class="fa-solid fa-paperclip mr-1.5"></i>{{
+                      respondentAnswers[question.id].name }} ({{ respondentAnswers[question.id].size }})</span>
+                    <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+                  </div>
+                </div>
+                <!-- TITLE BLOCK VIEWER -->
+                <div v-if="question.type === 'title_block'" class="pt-1 space-y-1">
+                  <h3 class="font-extrabold text-lg text-purple-900 dark:text-purple-300">{{ question.title }}</h3>
+                  <p v-if="question.description" class="text-xs text-slate-600 dark:text-slate-400 whitespace-pre-line">
+                    {{ question.description }}</p>
+                </div>
+
+                <!-- IMAGE BLOCK VIEWER -->
+                <div v-if="question.type === 'image_block'" class="pt-1 space-y-2 text-center">
+                  <h4 v-if="question.title" class="font-bold text-xs text-slate-700 dark:text-slate-300">{{
+                    question.title }}</h4>
+                  <div v-if="question.mediaUrl" class="flex justify-center">
+                    <img :src="question.mediaUrl" class="max-h-72 rounded-2xl border shadow-md object-cover" />
+                  </div>
+                </div>
+
+                <!-- VIDEO BLOCK VIEWER -->
+                <div v-if="question.type === 'video_block'" class="pt-1 space-y-2 text-center">
+                  <h4 v-if="question.title" class="font-bold text-xs text-slate-700 dark:text-slate-300 mb-2">{{
+                    question.title }}</h4>
+                  <div v-if="question.mediaUrl"
+                    class="aspect-video w-full rounded-2xl overflow-hidden shadow-md border">
+                    <iframe :src="question.mediaUrl" class="w-full h-full border-0" allowfullscreen></iframe>
+                  </div>
+                </div>
+
+                <!-- SECTION BREAK HEADER IN VIEWER -->
+                <div v-if="question.type === 'section_break'"
+                  class="p-4 rounded-2xl bg-purple-700 text-white space-y-1 shadow-md">
+                  <div class="text-[10px] font-black uppercase tracking-wider text-purple-200">Mục khảo sát</div>
+                  <h3 class="text-base font-extrabold">{{ question.title }}</h3>
+                  <p v-if="question.description" class="text-xs text-purple-100 opacity-90">{{ question.description }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Section Navigation & Submit Bar -->
+              <div class="pt-4 flex items-center justify-between gap-3">
+                <button v-if="currentSectionIndex > 0" @click="prevSection" type="button"
+                  class="px-5 py-3 rounded-xl border font-bold text-xs md:text-sm flex items-center space-x-2 transition"
+                  :class="themeMode === 'light' ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50' : 'bg-slate-800 border-slate-700 text-slate-200'">
+                  <i class="fa-solid fa-arrow-left"></i>
+                  <span>Quay lại</span>
+                </button>
+                <div v-else></div>
+
+                <button v-if="currentSectionIndex < surveySections.length - 1" @click="nextSection" type="button"
+                  class="px-6 py-3.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs md:text-sm flex items-center space-x-2 shadow-lg shadow-purple-700/30 touch-active ml-auto">
+                  <span>Tiếp tục (Trang {{ currentSectionIndex + 2 }})</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+
+                <button v-else id="btn-submit-survey" @click="submitForm"
+                  class="px-6 py-3.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs md:text-sm flex items-center space-x-2 shadow-lg shadow-purple-700/30 touch-active ml-auto">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span>Gửi câu trả lời</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- ================= 4. ANALYTICS & DASHBOARD VIEW ================= -->
+          <div v-if="currentView === 'analytics'" class="space-y-6 fade-enter-active">
+
+            <!-- Dashboard Subheader -->
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border shadow-sm"
+              :class="themeMode === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'">
+              <div class="flex items-center space-x-3">
+                <button @click="goHome" class="p-2 rounded-lg text-xs hover:opacity-80 border"
+                  :class="themeMode === 'light' ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-800 text-slate-300 border-slate-700'">
+                  <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                  <h3 class="font-extrabold text-sm md:text-base"
+                    :class="themeMode === 'light' ? 'text-slate-900' : 'text-slate-100'">Báo cáo & Thống kê kết quả</h3>
+                  <p class="text-xs" :class="themeMode === 'light' ? 'text-slate-500' : 'text-slate-400'">{{
+                    currentSurvey.title }}</p>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center space-x-2">
+                <button @click="refreshAnalyticsData" title="Tải dữ liệu phản hồi mới nhất từ Cloud"
+                  class="px-3 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-md active:scale-95 transition">
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                  <span>Đồng bộ Cloud ngay</span>
+                </button>
+
+                <button id="btn-export-csv" @click="exportCSV"
+                  class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center space-x-2 shadow-md">
+                  <i class="fa-solid fa-file-excel"></i>
+                  <span>Xuất file CSV / Excel</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Key Metric Stat Cards Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div class="glass-card rounded-2xl p-4 border space-y-1 shadow-sm"
+                :class="themeMode === 'light' ? 'bg-white border-purple-200' : 'border-indigo-500/20'">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-purple-700">Tổng số lượt gửi</span>
+                <div class="text-2xl font-extrabold text-purple-700 flex items-center space-x-2">
+                  <i class="fa-solid fa-users text-lg"></i>
+                  <span>{{ responses.length }}</span>
+                </div>
+              </div>
+
+              <div class="glass-card rounded-2xl p-4 border space-y-1 shadow-sm"
+                :class="themeMode === 'light' ? 'bg-white border-indigo-200' : 'border-purple-500/20'">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Số lượng câu hỏi</span>
+                <div class="text-2xl font-extrabold text-indigo-700 flex items-center space-x-2">
+                  <i class="fa-solid fa-list text-lg"></i>
+                  <span>{{ currentSurvey.questions.length }}</span>
+                </div>
+              </div>
+
+              <div class="col-span-2 sm:col-span-1 glass-card rounded-2xl p-4 border space-y-1 shadow-sm"
+                :class="themeMode === 'light' ? 'bg-white border-emerald-200' : 'border-emerald-500/20'">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Trạng thái dữ liệu</span>
+                <div class="text-sm font-bold text-emerald-600 flex items-center space-x-1.5 pt-1">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Cập nhật thời gian thực</span>
+                </div>
+              </div>
+            </div>
+            <!-- Empty Response Warning -->
+            <div v-if="responses.length === 0" class="text-center py-12 glass-card rounded-2xl border"
+              :class="themeMode === 'light' ? 'bg-white border-slate-200' : 'border-slate-800'">
+              <i class="fa-solid fa-chart-line text-4xl text-slate-400 mb-2"></i>
+              <h4 class="font-bold text-sm" :class="themeMode === 'light' ? 'text-slate-800' : 'text-slate-300'">Chưa có
+                lượt phản hồi nào</h4>
+              <p class="text-xs text-slate-500 mt-1">Hãy gửi link khảo sát để bắt đầu thu thập dữ liệu!</p>
+              <button @click="openViewer(currentSurvey.id)"
+                class="mt-4 px-4 py-2 rounded-xl bg-purple-700 text-white text-xs font-bold shadow-md">
+                Điền mẫu khảo sát ngay
+              </button>
+            </div>
+
+            <!-- Analytics Charts Section -->
+            <div v-else class="space-y-6">
+
+              <!-- AUDIO PROOF & AI TRANSCRIPT AUDIT SECTION (OPTIMIZED SLICING) -->
+              <div v-if="audioResponsesList.length > 0" class="glass-card rounded-2xl p-5 border space-y-4 shadow-sm"
+                :class="themeMode === 'light' ? 'bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-100 border-purple-200' : 'bg-slate-900 border-indigo-500/30'">
+                <div class="flex items-center justify-between border-b pb-3 border-purple-200/60 dark:border-slate-800">
+                  <h4
+                    class="font-extrabold text-sm md:text-base text-purple-900 dark:text-purple-300 flex items-center space-x-2">
+                    <i class="fa-solid fa-file-audio text-rose-500"></i>
+                    <span>Danh Sách Bằng Chứng Thoại & AI Phỏng Vấn (Hiển thị {{ Math.min(audioLimit,
+                      audioResponsesList.length) }} / {{ audioResponsesList.length }})</span>
+                  </h4>
+                </div>
+
+                <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                  <div v-for="(resp, rIdx) in audioResponsesList.slice(0, audioLimit)" :key="resp.id || rIdx"
+                    class="p-3.5 rounded-xl border text-xs space-y-2"
+                    :class="themeMode === 'light' ? 'bg-white border-purple-200 shadow-sm' : 'bg-slate-950 border-slate-800'">
+                    <div class="flex items-center justify-between font-bold text-slate-700 dark:text-slate-200">
+                      <span class="text-purple-700 dark:text-purple-400">#{{ rIdx + 1 }} - Phản hồi: {{ resp.id
+                        }}</span>
+                      <span class="text-[10px] text-slate-400">{{ formatDate(resp.submittedAt) }}</span>
+                    </div>
+
+                    <div v-if="resp.answers._aiTranscript"
+                      class="text-slate-600 dark:text-slate-300 italic bg-purple-50/50 dark:bg-slate-900 p-2 rounded-lg border border-purple-100 dark:border-slate-800">
+                      💬 AI Transcript: "{{ resp.answers._aiTranscript }}"
+                    </div>
+
+                    <div v-if="resp.answers._audioProof" class="flex items-center justify-between gap-2 pt-1">
+                      <span class="font-semibold text-slate-600 dark:text-slate-300">File âm thanh bằng chứng:</span>
+                      <audio :src="resp.answers._audioProof" controls class="h-8 max-w-full rounded-lg"></audio>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Load More Audio Button -->
+                <button v-if="audioResponsesList.length > audioLimit" @click="audioLimit += 30"
+                  class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Xem thêm {{ audioResponsesList.length - audioLimit }} file âm thanh bằng chứng khác...</span>
+                </button>
+              </div>
+
+              <!-- QUESTIONS ANALYTICS CARDS -->
+              <div v-for="(question, qIndex) in currentSurvey.questions" :key="question.id"
+                class="glass-card rounded-2xl p-5 space-y-4 border shadow-sm"
+                :class="themeMode === 'light' ? 'bg-white border-slate-200' : 'border-slate-800'">
+                <!-- Question Title Header -->
+                <div class="flex items-start justify-between border-b pb-3"
+                  :class="themeMode === 'light' ? 'border-slate-100' : 'border-slate-800'">
+                  <h4 class="font-extrabold text-sm md:text-base"
+                    :class="themeMode === 'light' ? 'text-slate-900' : 'text-slate-200'">
+                    <span class="text-purple-700 font-extrabold mr-1">Câu {{ qIndex + 1 }}:</span>
+                    {{ question.title }}
+                  </h4>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border"
+                    :class="themeMode === 'light' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-800 text-slate-400 border-slate-700'">
+                    {{ question.type === 'single_choice' ? 'Chọn một' : question.type === 'multiple_choice' ? 'Chọn nhiều' : question.type === 'dropdown' ? 'Menu thả xuống' : question.type === 'grid_single' ? 'Lưới trắc nghiệm' : question.type === 'grid_multiple' ? 'Lưới hộp kiểm' : question.type === 'date' ? 'Ngày' : question.type === 'time' ? 'Giờ' : question.type === 'file_upload' ? 'Tải tệp' : question.type === 'rating_5' ? 'Đánh giá sao' : 'Tự luận' }}
+                  </span>
+                </div>
+
+                <!-- SINGLE / MULTIPLE / DROPDOWN CHOICE CHARTS & STATS -->
+                <div
+                  v-if="question.type === 'single_choice' || question.type === 'multiple_choice' || question.type === 'dropdown'"
+                  class="space-y-4">
+                  <div class="h-64 w-full relative">
+                    <canvas :id="'chart_' + question.id"></canvas>
+                  </div>
+
+                  <div class="space-y-2 pt-2 border-t"
+                    :class="themeMode === 'light' ? 'border-slate-100' : 'border-slate-800/80'">
+                    <div v-for="(stat, sIdx) in getChoiceStats(question)" :key="sIdx" class="space-y-1">
+                      <div class="flex justify-between text-xs font-semibold"
+                        :class="themeMode === 'light' ? 'text-slate-700' : 'text-slate-300'">
+                        <span>{{ stat.option }}</span>
+                        <span class="text-purple-700 font-bold">{{ stat.count }} lượt ({{ stat.percent }}%)</span>
+                      </div>
+                      <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div class="bg-purple-700 h-full rounded-full" :style="{ width: stat.percent + '%' }"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- RATING 5 STARS ANALYTICS -->
+                <div v-if="question.type === 'rating_5'" class="space-y-4">
+                  <div class="flex items-center space-x-4 p-4 rounded-2xl border"
+                    :class="themeMode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/80 border-slate-800'">
+                    <div class="text-center px-4 border-r border-slate-200">
+                      <div class="text-3xl font-extrabold text-amber-500">{{ getAverageRating(question.id) }}</div>
+                      <div class="text-[10px] font-bold text-slate-500 uppercase">Trung bình</div>
+                    </div>
+                    <div class="flex-1 space-y-1">
+                      <div class="flex items-center text-amber-400 text-xs space-x-1">
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                      </div>
+                      <p class="text-xs text-slate-500">Dựa trên {{ responses.length }} đánh giá từ người dùng</p>
+                    </div>
+                  </div>
+
+                  <div class="h-56 w-full relative">
+                    <canvas :id="'chart_' + question.id"></canvas>
+                  </div>
+                </div>
+
+                <!-- TEXT ANSWERS LIST -->
+                <div v-if="question.type === 'text_short' || question.type === 'text_long'" class="space-y-2">
+                  <div class="text-xs font-bold text-slate-500">Danh sách các câu trả lời tự luận ({{
+                    getTextAnswers(question.id).length }}):</div>
+                  <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <div v-for="(item, tIdx) in getTextAnswers(question.id)" :key="tIdx"
+                      class="p-3 rounded-xl border text-xs space-y-1"
+                      :class="themeMode === 'light' ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-950/80 border-slate-800 text-slate-200'">
+                      <p class="leading-relaxed font-medium">"{{ item.answer }}"</p>
+                      <span class="text-[10px] text-slate-400 block text-right">
+                        <i class="fa-regular fa-clock mr-1"></i>{{ formatDate(item.submittedAt) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- GRID SINGLE & GRID MULTIPLE ANALYTICS -->
+                <div v-if="question.type === 'grid_single' || question.type === 'grid_multiple'" class="space-y-4">
+                  <div class="text-xs font-bold text-slate-500">Thống kê phân bổ theo Hàng & Cột:</div>
+                  <div class="overflow-x-auto border rounded-xl"
+                    :class="themeMode === 'light' ? 'border-slate-200' : 'border-slate-800'">
+                    <table class="w-full text-xs text-left">
+                      <thead class="uppercase tracking-wider font-bold border-b text-[10px]"
+                        :class="themeMode === 'light' ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-900 border-slate-800 text-slate-400'">
+                        <tr>
+                          <th class="p-3 border-r"
+                            :class="themeMode === 'light' ? 'border-slate-200' : 'border-slate-800'">Hàng \ Cột</th>
+                          <th v-for="col in question.columns" :key="col" class="p-3 text-center border-r"
+                            :class="themeMode === 'light' ? 'border-slate-200' : 'border-slate-800'">{{ col }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="rowStat in getGridStats(question)" :key="rowStat.row"
+                          class="border-b last:border-b-0"
+                          :class="themeMode === 'light' ? 'border-slate-100 hover:bg-slate-50' : 'border-slate-800/60 hover:bg-slate-900/50'">
+                          <td class="p-3 font-semibold border-r"
+                            :class="themeMode === 'light' ? 'border-slate-200 text-slate-800' : 'border-slate-800 text-slate-200'">
+                            {{ rowStat.row }}</td>
+                          <td v-for="cStat in rowStat.colStats" :key="cStat.col"
+                            class="p-3 text-center border-r text-xs"
+                            :class="themeMode === 'light' ? 'border-slate-200' : 'border-slate-800'">
+                            <span class="font-bold text-purple-700 dark:text-purple-400">{{ cStat.count }}</span>
+                            <span class="text-[10px] text-slate-400 block">({{ cStat.percent }}%)</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- DATE & TIME ANSWERS LIST -->
+                <div v-if="question.type === 'date' || question.type === 'time'" class="space-y-2">
+                  <div class="text-xs font-bold text-slate-500">Danh sách mốc thời gian đã chọn ({{
+                    getTextAnswers(question.id).length }}):</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                    <div v-for="(item, tIdx) in getTextAnswers(question.id)" :key="tIdx"
+                      class="p-3 rounded-xl border text-xs flex items-center justify-between"
+                      :class="themeMode === 'light' ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-950/80 border-slate-800 text-slate-200'">
+                      <span class="font-bold text-purple-700 dark:text-purple-400 flex items-center space-x-1.5">
+                        <i :class="question.type === 'date' ? 'fa-regular fa-calendar' : 'fa-regular fa-clock'"></i>
+                        <span>{{ item.answer }}</span>
+                      </span>
+                      <span class="text-[10px] text-slate-400">{{ formatDate(item.submittedAt) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- FILE UPLOAD ANSWERS LIST (with Image Preview) -->
+                <div v-if="question.type === 'file_upload'" class="space-y-3">
+                  <div class="text-xs font-bold text-slate-500">Danh sách tệp đính kèm đã gửi ({{
+                    getFileAnswers(question.id).length }}):</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-1">
+                    <div v-for="(item, fIdx) in getFileAnswers(question.id)" :key="fIdx"
+                      class="rounded-xl border overflow-hidden"
+                      :class="themeMode === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800'">
+                      <!-- IMAGE THUMBNAIL PREVIEW -->
+                      <a v-if="item.answer.dataUrl && item.answer.dataUrl.startsWith('data:image/')"
+                        :href="item.answer.dataUrl" target="_blank" class="block cursor-zoom-in">
+                        <img :src="item.answer.dataUrl" :alt="item.answer.name || 'Ảnh đính kèm'"
+                          class="w-full h-40 object-cover hover:opacity-80 transition-opacity" />
+                      </a>
+                      <!-- FILE INFO BAR -->
+                      <div class="p-3 flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-2 truncate"
+                          :class="themeMode === 'light' ? 'text-slate-800' : 'text-slate-200'">
+                          <i
+                            :class="item.answer.dataUrl && item.answer.dataUrl.startsWith('data:image/') ? 'fa-regular fa-image text-emerald-500' : 'fa-solid fa-paperclip text-purple-600'"></i>
+                          <div class="truncate">
+                            <span class="font-semibold block truncate max-w-[180px]">{{ item.answer.name || 'Tệp đính kèm' }}</span>
+                            <span class="text-[10px] text-slate-400">{{ item.answer.size || '' }} · {{
+                              formatDate(item.submittedAt) }}</span>
+                          </div>
+                        </div>
+                        <a :href="item.answer.dataUrl || item.answer" target="_blank" download
+                          class="px-2.5 py-1 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-[10px] font-bold shadow-sm shrink-0">
+                          <i class="fa-solid fa-download"></i>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </main>
+      </div>
+
+    </div>
+
+    <!-- SUPABASE CLOUD CONNECTION MODAL -->
+    <div v-if="supabaseModal.show"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div
+        class="w-full max-w-md glass-card rounded-2xl p-6 border space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200"
+        :class="themeMode === 'light' ? 'bg-white border-slate-200' : 'border-slate-700'">
+        <div class="flex items-center justify-between border-b pb-3"
+          :class="themeMode === 'light' ? 'border-slate-100' : 'border-slate-800'">
+          <h3 class="font-extrabold text-base flex items-center space-x-2"
+            :class="themeMode === 'light' ? 'text-slate-900' : 'text-slate-100'">
+            <i class="fa-solid fa-cloud text-emerald-600"></i>
+            <span>Kết nối Cơ Sở Dữ Liệu Supabase Cloud</span>
+          </h3>
+          <button @click="supabaseModal.show = false" class="text-slate-400 hover:text-slate-600 p-1">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+          Nhập Supabase Project URL & Anon Key từ trang quản trị <a href="https://supabase.com" target="_blank"
+            class="text-purple-700 underline font-bold">Supabase.com</a> để đồng bộ hóa khảo sát và dữ liệu phản hồi
+          trực tuyến.
+        </p>
+
+        <!-- Form Inputs -->
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Supabase Project
+              URL</label>
+            <input v-model="supabaseModal.url" type="text" placeholder="https://xyzcompany.supabase.co"
+              class="w-full text-xs border rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-700"
+              :class="themeMode === 'light' ? 'bg-slate-50 border-slate-300 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-200'" />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Supabase Anon Public
+              Key</label>
+            <input v-model="supabaseModal.key" type="password" placeholder="eyJhY2NvdW50X2lk..."
+              class="w-full text-xs border rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-700"
+              :class="themeMode === 'light' ? 'bg-slate-50 border-slate-300 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-200'" />
+          </div>
+        </div>
+
+        <!-- SQL Script Helper -->
+        <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
+          <div class="flex items-center justify-between text-xs font-extrabold text-purple-800">
+            <span>Mã SQL khởi tạo bảng Supabase:</span>
+            <button @click="copySQLScript" class="text-purple-700 hover:text-purple-900 underline text-[11px]">
+              <i class="fa-regular fa-copy mr-1"></i>Copy SQL
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-600">
+            Dán mã SQL này vào mục <strong>SQL Editor</strong> trên Supabase để tự động khởi tạo các bảng
+            <code>surveys</code> & <code>responses</code>.
+          </p>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="flex items-center justify-end space-x-2 pt-2">
+          <button @click="supabaseModal.show = false" class="px-4 py-2 rounded-xl text-xs font-bold border"
+            :class="themeMode === 'light' ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-800 text-slate-300 border-slate-700'">
+            Hủy
+          </button>
+          <button @click="saveSupabaseSettings"
+            class="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shadow-md">
+            Lưu & Kết nối
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARE & QR MODAL OVERLAY -->
+    <div v-if="shareModal.show"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div
+        class="w-full max-w-sm glass-card rounded-2xl p-6 border space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200"
+        :class="themeMode === 'light' ? 'bg-white border-slate-200' : 'border-slate-700'">
+        <div class="flex items-center justify-between border-b pb-3"
+          :class="themeMode === 'light' ? 'border-slate-100' : 'border-slate-800'">
+          <h3 class="font-extrabold text-base flex items-center space-x-2"
+            :class="themeMode === 'light' ? 'text-slate-900' : 'text-slate-100'">
+            <i class="fa-solid fa-qrcode text-purple-700"></i>
+            <span>Chia sẻ mẫu khảo sát</span>
+          </h3>
+          <button @click="shareModal.show = false" class="text-slate-400 hover:text-slate-600 p-1">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <!-- QR Image Box -->
+        <div class="text-center space-y-2">
+          <div
+            class="w-48 h-48 mx-auto p-3 bg-white rounded-2xl border border-slate-200 shadow-md flex items-center justify-center">
+            <img :src="shareModal.qrUrl" alt="QR Code Khảo Sát" class="w-full h-full object-contain" />
+          </div>
+          <p class="text-xs text-slate-500 font-semibold">Quét mã QR bằng camera điện thoại để điền nhanh</p>
+        </div>
+
+        <!-- Link Copy Input -->
+        <div class="space-y-2">
+          <label class="block text-[11px] font-bold text-slate-500 uppercase">Liên kết khảo sát direct</label>
+          <div class="flex items-center space-x-2">
+            <input type="text" readonly :value="shareLink"
+              class="flex-1 text-xs border rounded-xl px-3 py-2 focus:outline-none"
+              :class="themeMode === 'light' ? 'bg-slate-50 border-slate-300 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-300'" />
+            <button id="btn-copy-link-modal" @click="copySurveyLink"
+              class="px-3 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold flex items-center space-x-1 shadow-md">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copy</span>
+            </button>
+          </div>
+        </div>
+
+        <button @click="shareModal.show = false" class="w-full py-2.5 rounded-xl text-xs font-bold border"
+          :class="themeMode === 'light' ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-800 text-slate-300 border-slate-700'">
+          Đóng cửa sổ
+        </button>
+      </div>
+    </div>
+
+    <!-- ADMIN ACCESS PIN PROTECTION MODAL -->
+    <div v-if="adminPinModal.show"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+      <div
+        class="w-full max-w-sm glass-card rounded-2xl p-6 border space-y-4 shadow-2xl animate-in fade-in zoom-in duration-200"
+        :class="themeMode === 'light' ? 'bg-white border-slate-200' : 'border-slate-700'">
+        <div class="text-center space-y-1">
+          <div
+            class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-600 flex items-center justify-center mx-auto text-xl mb-2">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h3 class="font-extrabold text-base" :class="themeMode === 'light' ? 'text-slate-900' : 'text-slate-100'">
+            Bảo Vệ Mật Khẩu Admin Quản Trị
+          </h3>
+          <p class="text-xs text-slate-500">
+            Vui lòng nhập mật khẩu PIN Admin để truy cập trang quản trị Chủ Form!
+          </p>
+        </div>
+
+        <form @submit.prevent="verifyAdminPin" class="space-y-3 pt-2">
+          <div>
+            <input v-model="adminPinModal.pinInput" type="password" placeholder="Nhập mã PIN Admin bí mật" autofocus
+              class="w-full text-center tracking-widest text-lg font-bold py-2.5 rounded-xl border focus:outline-none transition"
+              :class="themeMode === 'light' ? 'bg-slate-50 border-slate-300 focus:border-amber-500 text-slate-900' : 'bg-slate-950 border-slate-800 focus:border-amber-500 text-slate-100'" />
+            <p v-if="adminPinModal.errorMsg" class="text-[11px] font-bold text-rose-500 mt-1.5 text-center">
+              {{ adminPinModal.errorMsg }}
+            </p>
+          </div>
+
+          <div class="flex items-center space-x-2 pt-2">
+            <button type="button" @click="adminPinModal.show = false"
+              class="flex-1 py-2.5 rounded-xl border text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+              Hủy bỏ
+            </button>
+            <button type="submit"
+              class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold shadow-md transition">
+              Mở Khóa Admin
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION POPUP -->
+    <div v-if="notification.show"
+      :class="{'bg-emerald-600 text-white': notification.type === 'success', 'bg-rose-600 text-white': notification.type === 'error', 'bg-amber-600 text-white': notification.type === 'warning'}"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-2 border border-white/20 transition-all duration-300">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>{{ notification.message }}</span>
+    </div>
+
+  </div>
+
+  <!-- Unregister any remaining Service Workers to prevent cache issues -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
+      });
+    }
+  </script>
+
+  <!-- App Main Scripts -->
+  <script src="js/store.js?v=52"></script>
+  <script src="js/app.js?v=52"></script>
+</body>
+
+</html>

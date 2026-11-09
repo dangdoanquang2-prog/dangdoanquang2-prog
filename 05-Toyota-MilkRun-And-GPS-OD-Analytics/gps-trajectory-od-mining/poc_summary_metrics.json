@@ -1,0 +1,9 @@
+{
+  "total_raw_gps_points": 217653,
+  "total_devices_analyzed": 2,
+  "total_stay_points_detected": 268,
+  "total_trips_extracted": 201,
+  "avg_trips_per_device_per_day": 50.25,
+  "total_od_pairs_generated": 101,
+  "execution_status": "SUCCESS"
+}

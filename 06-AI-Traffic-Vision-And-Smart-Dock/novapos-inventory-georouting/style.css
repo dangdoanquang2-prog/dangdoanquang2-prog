@@ -1,0 +1,1150 @@
+:root {
+    --bg-body: #0b0f19;
+    --bg-surface: #1a2235;
+    --bg-glass: rgba(26, 34, 53, 0.75);
+    --border: rgba(255, 255, 255, 0.08);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    
+    --brand-primary: #3b82f6;
+    --brand-primary-glow: rgba(59, 130, 246, 0.4);
+    --status-success: #10b981;
+    --status-warning: #f59e0b;
+    --status-danger: #ef4444;
+
+    --font-family: 'Inter', sans-serif;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* Layout Container */
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 10px;
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+    width: 260px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    transition: var(--transition);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--brand-primary), #8b5cf6);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    box-shadow: 0 4px 15px var(--brand-primary-glow);
+}
+
+.logo-text {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.logo-text span {
+    color: var(--brand-primary);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-item i {
+    font-size: 20px;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.nav-item.active {
+    background: var(--brand-primary);
+    color: white;
+    box-shadow: 0 4px 15px var(--brand-primary-glow);
+}
+
+.sidebar-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+}
+
+.nav-item.logout:hover {
+    color: var(--status-danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* --- MAIN CONTENT --- */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 40px;
+    overflow-y: auto;
+    background: radial-gradient(circle at top left, rgba(59,130,246,0.05), transparent 40%);
+}
+
+/* Header */
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.current-date {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-box i {
+    position: absolute;
+    left: 14px;
+    color: var(--text-secondary);
+    font-size: 18px;
+}
+
+.search-box input {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 10px 16px 10px 40px;
+    color: var(--text-primary);
+    font-size: 14px;
+    width: 250px;
+    outline: none;
+    transition: var(--transition);
+}
+
+.search-box input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.notifications {
+    position: relative;
+    cursor: pointer;
+    font-size: 22px;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.notifications:hover {
+    color: var(--text-primary);
+}
+
+.notifications .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--status-danger);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 2px solid var(--bg-body);
+}
+
+.avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: var(--transition);
+}
+
+.avatar:hover {
+    border-color: var(--brand-primary);
+}
+
+/* Dashboard Widgets */
+.dashboard-widgets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.widget-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.widget-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.widget-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+.widget-icon.primary {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--brand-primary);
+}
+
+.widget-icon.success {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--status-success);
+}
+
+.widget-icon.warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--status-warning);
+}
+
+.widget-icon.danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--status-danger);
+}
+
+.widget-info p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.widget-info h3 {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+/* Extended Dashboard Area */
+.dashboard-extended {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+}
+
+.panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.panel-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.view-all {
+    color: var(--brand-primary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.view-all:hover {
+    text-decoration: underline;
+}
+
+/* Tables */
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 16px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.data-table th {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.data-table tbody tr {
+    transition: var(--transition);
+}
+
+.data-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-badge.pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--status-warning);
+}
+
+.status-badge.completed {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--status-success);
+}
+
+/* Product List */
+.product-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.product-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    transition: var(--transition);
+}
+
+.product-item:hover {
+    border-color: var(--border);
+    transform: translateX(5px);
+}
+
+.product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.product-name {
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.product-stock {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.stock-count {
+    font-weight: 600;
+    color: var(--brand-primary);
+    background: rgba(59, 130, 246, 0.15);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+    .dashboard-widgets {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .dashboard-extended {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================
+   --- GIAO DIỆN HỆ THỐNG POS (POS.HTML) ---
+============================================================ */
+.pos-layout {
+    flex-direction: row;
+    gap: 24px;
+    padding: 24px;
+}
+
+/* Khu vực Lưới sản phẩm */
+.pos-products-area {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.pos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.pos-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    overflow-y: auto;
+    padding-bottom: 20px;
+}
+
+.pos-product-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+}
+
+.pos-product-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--brand-primary);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.product-img-wrapper {
+    height: 140px;
+    width: 100%;
+    overflow: hidden;
+    background: var(--bg-body);
+}
+
+.product-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: var(--transition);
+}
+
+.pos-product-card:hover .product-img-wrapper img {
+    transform: scale(1.05); /* Zoom nhẹ ảnh khi hover */
+}
+
+.pos-product-card .product-info {
+    padding: 16px;
+}
+
+.pos-product-card h4 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-product-card .price {
+    color: var(--brand-primary);
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.add-to-cart-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: var(--brand-primary);
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: var(--transition);
+}
+
+.pos-product-card:hover .add-to-cart-btn {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Khu vực Giỏ hàng (Cart) */
+.pos-cart-area {
+    flex: 1;
+    min-width: 350px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.cart-header h3 {
+    font-size: 18px;
+}
+
+.clear-cart-btn {
+    background: transparent;
+    border: 1px solid var(--status-danger);
+    color: var(--status-danger);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    transition: var(--transition);
+}
+
+.clear-cart-btn:hover {
+    background: var(--status-danger);
+    color: white;
+}
+
+.cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.empty-cart-msg {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-top: 40px;
+    font-style: italic;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--border);
+}
+
+.cart-item-info {
+    flex: 1;
+}
+
+.cart-item-name {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.cart-item-price {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-body);
+    border-radius: 20px;
+    padding: 4px 8px;
+}
+
+.qty-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 16px;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.qty-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.qty-number {
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.cart-summary {
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--border);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.summary-row.total-row {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    align-items: center;
+}
+
+.summary-row.total-row h2 {
+    color: var(--status-success);
+    font-size: 26px;
+}
+
+.checkout-btn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--status-success);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkout-btn:hover {
+    background: #059669; /* Darker emerald */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* ============================================================
+   --- GIAO DIỆN KHO HÀNG (INVENTORY.HTML) ---
+============================================================ */
+.inventory-header {
+    margin-bottom: 24px;
+}
+
+.inventory-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-glass);
+    padding: 16px 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+
+.filters {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.modern-select {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    min-width: 200px;
+}
+
+.modern-select:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition);
+}
+
+.primary-btn {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--brand-primary);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.primary-btn:hover {
+    background: var(--brand-primary);
+    color: white;
+}
+
+.inventory-data-panel {
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+}
+
+/* Badge Tình Trạng Tồn Kho */
+.stock-status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.stock-status-badge.success {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--status-success);
+}
+.stock-status-badge.warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--status-warning);
+}
+.stock-status-badge.danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--status-danger);
+}
+
+/* Nút nhập xuất nhanh +/- */
+.quick-adjust-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-surface);
+    border-radius: 20px;
+    padding: 4px;
+    width: max-content;
+    border: 1px solid var(--border);
+}
+
+.adj-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.adj-btn:hover {
+    background: var(--brand-primary);
+    color: white;
+}
+
+/* ============================================================
+   --- GIAO DIỆN GEO ROUTING (ONLINE_ORDERS.HTML) ---
+============================================================ */
+.geo-layout {
+    display: flex;
+    gap: 24px;
+    height: 100%;
+}
+
+.geo-simulator {
+    flex: 1;
+    min-width: 350px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.modern-input {
+    background: var(--bg-body);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.modern-input:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Màn hình Console Terminal */
+.geo-console {
+    flex: 1.5;
+    background: #0d1117; /* Darker Github profile color */
+    border: 1px solid #30363d;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+}
+
+.console-header {
+    background: #161b22;
+    padding: 12px 16px;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mac-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.console-body {
+    padding: 20px;
+    font-family: 'Fira Code', Consolas, Monaco, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.log-line {
+    margin-bottom: 8px;
+    word-wrap: break-word;
+    animation: fadeInLog 0.3s ease-in;
+}
+
+@keyframes fadeInLog {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Các màu sắc Log dựa theo yêu cầu User */
+.text-normal { color: #e6edf3; }
+.text-muted { color: #7d8590; }
+.text-yellow { color: #e3b341; }
+.text-green { color: #3fb950; font-weight: 600; }
+.text-red { color: #f85149; }
+
+/* ============================================================
+   --- CẤU HÌNH LOGIC CHO MÁY IN HÓA ĐƠN (@media print) ---
+============================================================ */
+.print-bill-container {
+    display: none; /* Bình thường biến mất hoàn toàn */
+}
+
+@media print {
+    /* Giấu toàn bộ nền web tăm tối đi */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Vứt màu nền đen, chuyển sang chuẩn in giấy trắng */
+    body {
+        background: #fff;
+        color: #000;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Bật lại cái thẻ chứa hóa đơn */
+    #printBillDiv, #printBillDiv * {
+        visibility: visible;
+    }
+
+    #printBillDiv {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm; /* Kích thước chuẩn giấy in nhiệt K80 */
+        margin: 0 auto;
+        padding: 5mm;
+        font-family: 'Courier New', Courier, monospace; /* Font in nhiệt đặc trưng */
+        font-size: 12px;
+        color: black;
+    }
+
+    /* Decorate lại Bill */
+    #printBillDiv .bill-header {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    #printBillDiv .bill-header h2 {
+        margin: 0; font-size: 18px; font-weight: bold;
+    }
+    #printBillDiv p {
+        margin: 2px 0;
+    }
+    #printBillDiv .bill-divider {
+        border-top: 1px dashed #000;
+        margin: 10px 0;
+    }
+    #printBillDiv .bill-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    #printBillDiv .bill-total {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+    #printBillDiv .bill-footer {
+        text-align: center;
+        margin-top: 20px;
+        font-style: italic;
+    }
+}
+
+/* ============================================================
+   --- TÍNH NĂNG GỢI Ý TÌM KIẾM (AUTO-SUGGEST PHASE 21) ---
+============================================================ */
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.suggestion-item {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: var(--transition);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.suggestion-item i {
+    color: var(--brand-primary);
+    font-size: 20px;
+    position: static;
+}
+
+.suggestion-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.suggestion-name {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.suggestion-type {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+ / *   G l o b a l   S e a r c h   A u t o - S u g g e s t   ( P h a s e   2 1 )   * / 
+ . s u g g e s t i o n s - d r o p d o w n   { 
+         p o s i t i o n :   a b s o l u t e ; 
+         t o p :   1 0 0 % ; 
+         l e f t :   0 ; 
+         r i g h t :   0 ; 
+         m a r g i n - t o p :   8 p x ; 
+         b a c k g r o u n d :   v a r ( - - b g - s u r f a c e ) ; 
+         b o r d e r :   1 p x   s o l i d   v a r ( - - b o r d e r ) ; 
+         b o r d e r - r a d i u s :   v a r ( - - r a d i u s - m d ) ; 
+         b o x - s h a d o w :   0   1 0 p x   3 0 p x   r g b a ( 0 , 0 , 0 , 0 . 5 ) ; 
+         m a x - h e i g h t :   3 0 0 p x ; 
+         o v e r f l o w - y :   a u t o ; 
+         z - i n d e x :   1 0 0 0 ; 
+         d i s p l a y :   n o n e ; 
+ } 
+ 
+ . s u g g e s t i o n - i t e m   { 
+         p a d d i n g :   1 2 p x   1 6 p x ; 
+         d i s p l a y :   f l e x ; 
+         a l i g n - i t e m s :   c e n t e r ; 
+         g a p :   1 2 p x ; 
+         c u r s o r :   p o i n t e r ; 
+         b o r d e r - b o t t o m :   1 p x   s o l i d   r g b a ( 2 5 5 , 2 5 5 , 2 5 5 , 0 . 0 5 ) ; 
+         t r a n s i t i o n :   v a r ( - - t r a n s i t i o n ) ; 
+ } 
+ 
+ . s u g g e s t i o n - i t e m : l a s t - c h i l d   { 
+         b o r d e r - b o t t o m :   n o n e ; 
+ } 
+ 
+ . s u g g e s t i o n - i t e m : h o v e r   { 
+         b a c k g r o u n d :   r g b a ( 5 9 ,   1 3 0 ,   2 4 6 ,   0 . 1 5 ) ; 
+ } 
+ 
+ . s u g g e s t i o n - i t e m   i   { 
+         c o l o r :   v a r ( - - b r a n d - p r i m a r y ) ; 
+         f o n t - s i z e :   2 0 p x ; 
+         p o s i t i o n :   s t a t i c ; 
+ } 
+ 
+ . s u g g e s t i o n - i n f o   { 
+         d i s p l a y :   f l e x ; 
+         f l e x - d i r e c t i o n :   c o l u m n ; 
+ } 
+ 
+ . s u g g e s t i o n - n a m e   { 
+         c o l o r :   v a r ( - - t e x t - p r i m a r y ) ; 
+         f o n t - s i z e :   1 4 p x ; 
+         f o n t - w e i g h t :   5 0 0 ; 
+ } 
+ 
+ . s u g g e s t i o n - t y p e   { 
+         c o l o r :   v a r ( - - t e x t - s e c o n d a r y ) ; 
+         f o n t - s i z e :   1 2 p x ; 
+ } 
+  
+ 

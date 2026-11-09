@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảo mật Tường lửa - NovaPOS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body {
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #fff;
+        }
+        .login-glass {
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+            padding: 40px;
+            border-radius: 20px;
+            width: 400px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .logo { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .logo span { color: #3b82f6; }
+        .sub-title { color: #94a3b8; font-size: 14px; margin-bottom: 30px; }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 20px;
+        }
+        .login-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
+            padding: 14px 14px 14px 45px;
+            border-radius: 12px;
+            color: white;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        .login-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-login:hover { background: #2563eb; transform: translateY(-2px); }
+        .credentials-hint {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: left;
+            border: 1px dashed rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-glass">
+        <div class="logo"><i class='bx bx-cube-alt'></i> Nova<span>POS</span></div>
+        <p class="sub-title">Hệ thống Quản lý Bán hàng Cấp cao</p>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <i class='bx bx-user'></i>
+                <input type="text" id="username" class="login-input" placeholder="Tên đăng nhập" required autocomplete="off">
+            </div>
+            
+            <div class="input-group">
+                <i class='bx bx-lock-alt'></i>
+                <input type="password" id="password" class="login-input" placeholder="Mật mã an ninh" required>
+            </div>
+            
+            <button type="submit" class="btn-login" id="btnSubmit">
+                <i class='bx bx-log-in-circle'></i> Truy cập Hệ thống
+            </button>
+        </form>
+
+        <div class="credentials-hint">
+            <strong>Dữ liệu test nội bộ:</strong><br><br>
+            • Quản lý: <b>admin</b> / Pass: <b>123</b><br>
+            • Thu ngân: <b>thungan</b> / Pass: <b>123</b>
+        </div>
+    </div>
+
+    <script>
+        // Đồng bộ Tên Thương Hiệu (Dynamic Branding)
+        document.addEventListener('DOMContentLoaded', () => {
+            let appData = JSON.parse(localStorage.getItem('novaPosData'));
+            if (appData && appData.settings) {
+                const storeName = appData.settings.storeName || "NovaPOS";
+                document.title = `Bảo mật Tường lửa - ${storeName}`;
+                
+                const logoEl = document.querySelector('.logo');
+                if (logoEl) {
+                    let half = Math.ceil(storeName.length / 2);
+                    let firstPart = storeName.substring(0, half);
+                    let secondPart = storeName.substring(half);
+                    
+                    let logoIconHTML = `<i class='bx bx-cube-alt'></i>`;
+                    if (appData.settings.storeLogo) {
+                        // Nhúng Ảnh Base64 làm Logo
+                        logoIconHTML = `<img src="${appData.settings.storeLogo}" style="height: 36px; width: 36px; object-fit: cover; border-radius: 8px; vertical-align: middle; margin-right: 8px;">`;
+                    }
+                    
+                    logoEl.innerHTML = `${logoIconHTML} ${firstPart}<span>${secondPart}</span>`;
+                    logoEl.style.display = "flex";
+                    logoEl.style.alignItems = "center";
+                    logoEl.style.justifyContent = "center";
+                }
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+
+            if (u === 'admin' && p === '123') {
+                sessionStorage.setItem('novaPosUser', JSON.stringify({ role: 'admin', name: 'Đoàn Quang Đăng' }));
+                window.location.href = 'index.html';
+            } else if (u === 'thungan' && p === '123') {
+                sessionStorage.setItem('novaPosUser', JSON.stringify({ role: 'cashier', name: 'Thu Ngân Quầy 1' }));
+                window.location.href = 'pos.html'; // Draft ngay vào quầy
+            } else {
+                alert("Tài khoản hoặc Mật khẩu không chính xác. Tường lửa đã chặn!");
+            }
+        });
+    </script>
+</body>
+</html>
